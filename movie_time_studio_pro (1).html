@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Time Studio Pro - AI Khmer Auto Dubbing & Video Editor</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts for Khmer & Cyberpunk feel -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&family=Orbitron:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        studio: {
+                            bg: '#07090E',
+                            card: '#0F1420',
+                            border: '#1E293B',
+                            hover: '#1B2436',
+                            accent: '#6366F1',
+                            cyan: '#06B6D4',
+                            magenta: '#EC4899',
+                            gold: '#F59E0B',
+                            green: '#10B981',
+                        }
+                    },
+                    fontFamily: {
+                        khmer: ['Kantumruy Pro', 'Battambang', 'sans-serif'],
+                        tech: ['Orbitron', 'sans-serif'],
+                        sans: ['Plus Jakarta Sans', 'Kantumruy Pro', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #07090E;
+            color: #E2E8F0;
+            font-family: 'Plus Jakarta Sans', 'Kantumruy Pro', sans-serif;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0F17;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        /* Glassmorphism Elements */
+        .glass-panel {
+            background: rgba(15, 20, 32, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .neon-glow-blue {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.35);
+        }
+
+        .neon-glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+        }
+
+        .neon-glow-green {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
+        }
+
+        /* Audio Waveform Canvas Animation */
+        .waveform-bar {
+            transition: height 0.1s ease;
+        }
+
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: #1E293B;
+            border-radius: 6px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #06B6D4;
+            cursor: pointer;
+            box-shadow: 0 0 8px #06B6D4;
+            transition: all 0.2s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #38BDF8;
+        }
+
+        /* Pulse Animations */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-live {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col font-khmer text-sm">
+
+    <!-- TOP HEADER / TOOLBAR -->
+    <header class="h-14 glass-panel border-b border-slate-800/80 px-4 flex items-center justify-between shrink-0 z-20">
+        <!-- Brand & Title -->
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-cyan-500 to-emerald-400 p-[2px] flex items-center justify-center neon-glow-cyan">
+                <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                    <i class="fa-solid fa-film text-cyan-400 text-lg"></i>
+                </div>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="font-tech text-base font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-indigo-300 to-pink-400">
+                        MOVIE TIME STUDIO PRO
+                    </h1>
+                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-gradient-to-r from-amber-500 to-rose-500 text-black font-tech">AI DUBBING v4.5</span>
+                </div>
+                <p class="text-[11px] text-slate-400">ប្រព័ន្ធស្វ័យប្រវត្តិបកប្រែវីដេអូ និងបញ្ចូលសំឡេងរឿងភាគ (AI Auto Khmer Dubbing)</p>
+            </div>
+        </div>
+
+        <!-- Center System Status Badges -->
+        <div class="hidden lg:flex items-center space-x-3 text-xs">
+            <div class="flex items-center space-x-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-live"></span>
+                <span class="text-slate-300">Engine Status: <strong class="text-emerald-400 font-mono">Gemini-3 Flash & Whisper Pro</strong></span>
+            </div>
+            <div class="flex items-center space-x-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg">
+                <i class="fa-solid fa-crown text-amber-400"></i>
+                <span class="text-slate-300">License: <strong class="text-amber-400">Lifetime VIP Active</strong></span>
+            </div>
+        </div>
+
+        <!-- Right Quick Actions -->
+        <div class="flex items-center space-x-2">
+            <button onclick="saveProject()" class="px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center space-x-1.5 text-xs">
+                <i class="fa-solid fa-floppy-disk text-indigo-400"></i>
+                <span>រក្សាទុក Project</span>
+            </button>
+
+            <button onclick="openExportModal()" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-black font-bold border border-emerald-400 transition flex items-center space-x-2 text-xs shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-file-export text-black"></i>
+                <span>Export វីដេអូចុងក្រោយ (MP4)</span>
+            </button>
+
+            <button onclick="resetStudio()" class="p-1.5 rounded-lg bg-slate-800/60 hover:bg-rose-950/50 hover:text-rose-400 text-slate-400 border border-slate-800 transition" title="Reset All">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN STUDIO WORKSPACE (3-COLUMN LAYOUT) -->
+    <div class="flex-1 flex overflow-hidden p-2 gap-2">
+
+        <!-- ================= PANEL 1: LEFT SIDE - VIDEO PLAYER & MEDIA INPUT ================= -->
+        <div class="w-full lg:w-[320px] xl:w-[380px] flex flex-col gap-2 shrink-0">
+            
+            <!-- Video Player Box -->
+            <div class="glass-panel rounded-xl p-3 border border-slate-800 flex flex-col gap-2 relative">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-tv text-cyan-400"></i> ផ្ទាំងមើលវីដេអូ (Video Preview)
+                    </span>
+                    <span id="videoResolutionBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">1080p | 30fps</span>
+                </div>
+
+                <!-- Video Viewport Container -->
+                <div class="relative aspect-video bg-black rounded-lg overflow-hidden border border-slate-800 group shadow-inner">
+                    <video id="mainVideo" class="w-full h-full object-contain" poster="https://placehold.co/640x360/0b0f19/38bdf8?text=Movie+Time+Studio+Pro">
+                        <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4" type="video/mp4">
+                         Your browser does not support video playback.
+                    </video>
+
+                    <!-- Subtitle Overlay on Video -->
+                    <div id="subOverlay" class="absolute bottom-6 left-2 right-2 text-center pointer-events-none">
+                        <span id="subOverlayText" class="inline-block bg-black/85 text-amber-300 text-xs md:text-sm px-3 py-1 rounded-md font-bold tracking-wide shadow-2xl border border-amber-500/30">
+                            [ កំពុងរង់ចាំការបកប្រែអត្ថបទ... ]
+                        </span>
+                    </div>
+
+                    <!-- Custom Player Controls Hover Overlay -->
+                    <div class="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-90 transition flex flex-col gap-1.5">
+                        <!-- Progress Slider -->
+                        <input type="range" id="videoProgressBar" min="0" max="100" value="0" step="0.1" class="w-full cursor-pointer">
+
+                        <div class="flex items-center justify-between text-xs text-slate-300">
+                            <div class="flex items-center space-x-2">
+                                <button id="playPauseBtn" onclick="togglePlay()" class="w-7 h-7 rounded-full bg-cyan-500 text-black flex items-center justify-center hover:bg-cyan-400 transition font-bold">
+                                    <i class="fa-solid fa-play text-xs"></i>
+                                </button>
+                                <button onclick="skipTime(-10)" class="text-slate-400 hover:text-white transition" title="-10 Seconds">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                                <button onclick="skipTime(10)" class="text-slate-400 hover:text-white transition" title="+10 Seconds">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </button>
+                                <span id="timeDisplay" class="font-mono text-[11px] text-cyan-400">00:00 / 00:00</span>
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-volume-high text-slate-400 text-xs"></i>
+                                <input type="range" id="volumeControl" min="0" max="1" step="0.05" value="1" class="w-16">
+                                <select id="speedControl" onchange="changeSpeed(this.value)" class="bg-slate-900 border border-slate-700 text-[10px] rounded px-1 py-0.5 text-slate-300">
+                                    <option value="1">1.0x</option>
+                                    <option value="1.2">1.2x</option>
+                                    <option value="1.5">1.5x</option>
+                                    <option value="2.0">2.0x</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video File Uploader Drag & Drop Zone -->
+                <div class="border-2 border-dashed border-slate-800 hover:border-cyan-500/50 rounded-lg p-3 text-center transition bg-slate-950/40 cursor-pointer" onclick="document.getElementById('videoFileInput').click()">
+                    <input type="file" id="videoFileInput" accept="video/*,audio/*" class="hidden" onchange="handleFileSelect(event)">
+                    <div class="flex items-center justify-center space-x-2 text-cyan-400">
+                        <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                        <span class="text-xs font-semibold">ទម្លាក់វីដេអូ ឬ Audio នៅទីនេះ (Drop File)</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1">គាំទ្រ MP4, MKV, MOV, TS, MP3, WAV (មិនកំណត់ទំហំ)</p>
+                </div>
+            </div>
+
+            <!-- Video Metadata Info Card -->
+            <div class="glass-panel rounded-xl p-3 border border-slate-800 flex-1 flex flex-col justify-between text-xs space-y-2">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                    <span class="font-semibold text-slate-300"><i class="fa-solid fa-circle-info text-indigo-400 mr-1"></i> ព័ត៌មានវីដេអូ (Metadata)</span>
+                    <span class="text-[10px] text-emerald-400 bg-emerald-950/50 border border-emerald-800/60 px-2 py-0.5 rounded">Ready to Process</span>
+                </div>
+                <div class="space-y-1.5 font-mono text-[11px] text-slate-400">
+                    <div class="flex justify-between"><span>ឈ្មោះឯកសារ:</span> <span id="metaFileName" class="text-slate-200 truncate max-w-[180px]">Chinese_Drama_Short_S1.mp4</span></div>
+                    <div class="flex justify-between"><span>រយៈពេលសរុប:</span> <span id="metaDuration" class="text-cyan-400">08:11.45</span></div>
+                    <div class="flex justify-between"><span>កម្រិតរូបភាព:</span> <span class="text-slate-200">1920x1080 (16:9)</span></div>
+                    <div class="flex justify-between"><span>ភាសាដើមទាញបាន:</span> <span class="text-amber-400 font-sans">ភាសាចិន (Mandarin Chinese - zh-CN)</span></div>
+                    <div class="flex justify-between"><span>ចំនូនឃ្លាសន្ទនា (Lines):</span> <span id="metaLinesCount" class="text-indigo-400 font-bold">12 ឃ្លា</span></div>
+                </div>
+
+                <div class="p-2 bg-slate-900/90 rounded-lg border border-slate-800/80 flex items-center justify-between">
+                    <span class="text-[11px] text-slate-400">ស្ថានភាព Translate Cache:</span>
+                    <span class="text-[10px] text-emerald-400 font-bold bg-emerald-900/30 px-2 py-0.5 rounded border border-emerald-700/50">Gemini Pro Synced</span>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- ================= PANEL 2: CENTER - SCRIPT & SUBTITLE EDITOR ================= -->
+        <div class="flex-1 flex flex-col glass-panel rounded-xl border border-slate-800 overflow-hidden">
+            
+            <!-- Top Subtitle Control Ribbon -->
+            <div class="p-2.5 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-2">
+                
+                <!-- Action Buttons Group 1 -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="runWhisperTranscribe()" class="px-3 py-1.5 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 text-white font-semibold text-xs border border-indigo-400/40 transition flex items-center space-x-1.5 shadow-md shadow-indigo-600/20">
+                        <i class="fa-solid fa-microphone-lines text-cyan-300"></i>
+                        <span>ចាប់សំឡេង (Transcribe Speech)</span>
+                    </button>
+
+                    <button onclick="runAutoTranslate()" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs border border-cyan-400/40 transition flex items-center space-x-1.5 shadow-md shadow-cyan-600/20">
+                        <i class="fa-solid fa-language text-yellow-300"></i>
+                        <span>បកប្រែស្វ័យប្រវត្តិជាខ្មែរ</span>
+                    </button>
+                </div>
+
+                <!-- Language Selectors -->
+                <div class="flex items-center space-x-2 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs">
+                    <span class="text-slate-400 text-[11px] pl-1">ពី:</span>
+                    <select id="sourceLang" class="bg-slate-950 text-slate-200 rounded px-2 py-1 border border-slate-700 focus:outline-none">
+                        <option value="zh-CN">🇨🇳 ភាសាចិន (Chinese)</option>
+                        <option value="en-US">🇺🇸 ភាសាអង់គ្លេស (English)</option>
+                        <option value="ko-KR">🇰🇷 ភាសាកូរ៉េ (Korean)</option>
+                        <option value="ja-JP">🇯🇵 ភាសាចិន/ជប៉ុន (Japanese)</option>
+                        <option value="th-TH">🇹🇭 ភាសាថៃ (Thai)</option>
+                    </select>
+                    <i class="fa-solid fa-arrow-right text-slate-500 text-[10px]"></i>
+                    <span class="text-slate-400 text-[11px]">ទៅ:</span>
+                    <span class="bg-emerald-950 text-emerald-400 font-bold px-2 py-1 rounded border border-emerald-800/60 flex items-center gap-1">
+                        🇰🇭 ភាសាខ្មែរ (Khmer)
+                    </span>
+                </div>
+
+                <!-- SRT Import/Export Actions -->
+                <div class="flex items-center space-x-1.5">
+                    <button onclick="document.getElementById('srtFileInput').click()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 text-xs transition" title="បើកហ្វាល់ SRT">
+                        <i class="fa-solid fa-file-import mr-1 text-cyan-400"></i> បើក SRT
+                    </button>
+                    <input type="file" id="srtFileInput" accept=".srt" class="hidden" onchange="importSRTFile(event)">
+
+                    <button onclick="exportSRTFile()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 text-xs transition" title="ទាញយកហ្វាល់ SRT">
+                        <i class="fa-solid fa-file-export mr-1 text-emerald-400"></i> ទាញយក SRT
+                    </button>
+                </div>
+            </div>
+
+            <!-- Subtitle Rows & Script Table Header -->
+            <div class="grid grid-cols-12 gap-2 p-2 bg-slate-900/90 border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <div class="col-span-1 text-center"># / Time</div>
+                <div class="col-span-2 text-center">តួអង្គ (Speaker)</div>
+                <div class="col-span-4">អត្ថបទដើម (Original Text)</div>
+                <div class="col-span-4">អត្ថបទបកប្រែខ្មែរ (Khmer Dub Script)</div>
+                <div class="col-span-1 text-center">សកម្មភាព</div>
+            </div>
+
+            <!-- Dynamic Subtitle Table List (Scrollable Area) -->
+            <div id="subtitleListContainer" class="flex-1 overflow-y-auto p-2 space-y-2">
+                <!-- Subtitle Rows Rendered dynamically via JavaScript -->
+            </div>
+
+            <!-- Bottom Table Toolbar / Add Row -->
+            <div class="p-2 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-2">
+                    <button onclick="addNewSubtitleRow()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded-lg transition flex items-center space-x-1">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>បន្ថែមជួរថ្មី (Add Line)</span>
+                    </button>
+                    <span class="text-slate-500">|</span>
+                    <span id="subCountSummary" class="text-slate-400">សរុប៖ <strong class="text-slate-200">6 ឃ្លា</strong></span>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="searchInput" placeholder="ស្វែងរកពាក្យ ឬអក្សរ..." onkeyup="filterSubtitleRows()" class="bg-slate-900 border border-slate-800 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500 w-40">
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ================= PANEL 3: RIGHT SIDE - VOICE SYNTHESIS & MIXING CONTROLS ================= -->
+        <div class="w-full lg:w-[320px] xl:w-[360px] flex flex-col gap-2 shrink-0">
+            
+            <!-- Voice Engine & Character Settings Box -->
+            <div class="glass-panel rounded-xl p-3 border border-slate-800 flex flex-col gap-3">
+                
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-sliders text-cyan-400"></i> ការកំណត់សំឡេង AI (Voice Engine)
+                    </span>
+                    <span class="text-[10px] bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800">Edge TTS + Gemini Pro</span>
+                </div>
+
+                <!-- Voice Character Assignment Mapping -->
+                <div class="space-y-2 text-xs">
+                    <p class="text-slate-400 text-[11px]">កំណត់សំឡេងតាមប្រភេទតួអង្គក្នុងរឿង (Character Mapping):</p>
+                    
+                    <!-- Male Voice Option -->
+                    <div class="p-2 bg-slate-900/80 rounded-lg border border-slate-800 space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-cyan-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-mars"></i> តួអង្គប្រុស (Male Voice)</span>
+                            <span class="text-[10px] text-slate-500">km-KH-PisethNeural</span>
+                        </div>
+                        <select id="maleVoiceSelect" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded p-1.5 focus:border-cyan-500">
+                            <option value="PisethNeural">🎙️ ពិសិដ្ឋ (Piseth - សំឡេងប្រុសទន់ភ្លន់/ស្រទន់)</option>
+                            <option value="MaleDramatic">🎬 សំឡេងប្រុសរ៉ាវ / វាយប្រហារ (Action Male)</option>
+                            <option value="MaleYoung">👦 សំឡេងប្រុសក្មេង (Young Male)</option>
+                        </select>
+                    </div>
+
+                    <!-- Female Voice Option -->
+                    <div class="p-2 bg-slate-900/80 rounded-lg border border-slate-800 space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-pink-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-venus"></i> តួអង្គស្រី (Female Voice)</span>
+                            <span class="text-[10px] text-slate-500">km-KH-SreymomNeural</span>
+                        </div>
+                        <select id="femaleVoiceSelect" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded p-1.5 focus:border-pink-500">
+                            <option value="SreymomNeural">🎙️ ស្រីមុំ (Sreymom - សំឡេងស្រីស្រទន់/ច្បាស់)</option>
+                            <option value="FemaleEmotional">🎭 សំឡេងស្រីមានមនោសញ្ចេតនា (Emotional Female)</option>
+                            <option value="FemaleSoft">👧 សំឡេងស្រីក្មេងទន់ភ្លន់ (Soft Female)</option>
+                        </select>
+                    </div>
+
+                    <!-- Narrator Voice Option -->
+                    <div class="p-2 bg-slate-900/80 rounded-lg border border-slate-800 space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-amber-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-microphone text-amber-400"></i> សំឡេងសម្រាយរឿង (Narrator)</span>
+                            <span class="text-[10px] text-slate-500">Gemini Neural Voice</span>
+                        </div>
+                        <select id="narratorVoiceSelect" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded p-1.5 focus:border-amber-500">
+                            <option value="DeepNarrator">📖 សំឡេងអ្នកសម្រាយរឿងធ្ងន់អំណាច (Deep Narrator)</option>
+                            <option value="DocumentaryPro">🎙️ សំឡេងបែបឯកសារ (Documentary Pro)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Voice Fine-Tuning Sliders -->
+                <div class="space-y-2.5 pt-1 border-t border-slate-800 text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-300">ល្បឿននិយាយ (Speed): <strong id="speedValueDisplay" class="text-cyan-400 font-mono">1.0x</strong></span>
+                    </div>
+                    <input type="range" id="voiceSpeedSlider" min="0.5" max="1.8" step="0.05" value="1.0" oninput="document.getElementById('speedValueDisplay').innerText = this.value + 'x'" class="w-full">
+
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-300">កម្រិតសំឡេង Pitch: <strong id="pitchValueDisplay" class="text-cyan-400 font-mono">0Hz</strong></span>
+                    </div>
+                    <input type="range" id="voicePitchSlider" min="-20" max="20" step="1" value="0" oninput="document.getElementById('pitchValueDisplay').innerText = (this.value > 0 ? '+' : '') + this.value + 'Hz'" class="w-full">
+                </div>
+            </div>
+
+            <!-- Audio Mixer & Volume Balance Card -->
+            <div class="glass-panel rounded-xl p-3 border border-slate-800 flex-1 flex flex-col justify-between space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-sliders text-emerald-400"></i> ការសម្រួលសំឡេង (Audio Mixer)
+                    </span>
+                    <i class="fa-solid fa-compact-disc text-slate-500 animate-spin"></i>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <!-- Original Audio Ducking Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">សំឡេងដើមវីដេអូ (Original Audio):</span>
+                            <span id="origVolDisplay" class="text-amber-400 font-mono">15%</span>
+                        </div>
+                        <input type="range" id="origAudioVolume" min="0" max="100" value="15" oninput="document.getElementById('origVolDisplay').innerText = this.value + '%'" class="w-full">
+                    </div>
+
+                    <!-- Dubbed Khmer Voice Volume Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">សំឡេងបកប្រែខ្មែរ (Khmer Dub Volume):</span>
+                            <span id="dubVolDisplay" class="text-emerald-400 font-mono">100%</span>
+                        </div>
+                        <input type="range" id="dubAudioVolume" min="0" max="100" value="100" oninput="document.getElementById('dubVolDisplay').innerText = this.value + '%'" class="w-full">
+                    </div>
+
+                    <!-- Background Music Track Mix -->
+                    <div class="space-y-1 p-2 bg-slate-900/60 rounded-lg border border-slate-800">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-indigo-300 font-semibold text-[11px]"><i class="fa-solid fa-music mr-1"></i> តន្ត្រី BGM បន្ថែម</span>
+                            <button onclick="document.getElementById('bgmFileInput').click()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded border border-slate-700">ជ្រើស BGM</button>
+                            <input type="file" id="bgmFileInput" accept="audio/*" class="hidden">
+                        </div>
+                        <input type="range" id="bgmVolume" min="0" max="100" value="25" class="w-full">
+                    </div>
+                </div>
+
+                <!-- MAIN HUGE DUBBING PROCESS BUTTON -->
+                <button onclick="startFullDubbingProcess()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 hover:from-amber-400 hover:via-rose-400 hover:to-indigo-500 text-black font-extrabold text-sm border border-amber-300 shadow-xl shadow-rose-600/25 transition transform active:scale-95 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-bolt text-lg"></i>
+                    <span>ចាប់ផ្តើមបកប្រែ និងបញ្ចូលសំឡេង (Start Dubbing)</span>
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ================= BOTTOM PANEL: INTERACTIVE AUDIO TIMELINE & TRACK CANVAS ================= -->
+    <div class="h-44 glass-panel border-t border-slate-800/80 p-2 flex flex-col shrink-0 relative z-10">
+        
+        <!-- Timeline Control Bar -->
+        <div class="flex items-center justify-between pb-1 px-1 border-b border-slate-800/60 text-xs">
+            <div class="flex items-center space-x-3">
+                <span class="font-bold text-slate-300 flex items-center gap-1">
+                    <i class="fa-solid fa-[#06B6D4] fa-wave-square text-cyan-400"></i> Audio Timeline Multi-Track
+                </span>
+                <span class="text-[11px] text-slate-500 font-mono" id="timelineMarkerCode">Timecode: 00:02:14.05</span>
+            </div>
+
+            <!-- Zoom Controls & Track Visibility -->
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-1">
+                    <span class="text-[11px] text-slate-400">Zoom:</span>
+                    <button onclick="zoomTimeline(-1)" class="w-5 h-5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 flex items-center justify-center">-</button>
+                    <button onclick="zoomTimeline(1)" class="w-5 h-5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 flex items-center justify-center">+</button>
+                </div>
+
+                <div class="flex items-center space-x-2 text-[11px]">
+                    <span class="flex items-center gap-1 text-cyan-400"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> Video</span>
+                    <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Orig Audio</span>
+                    <span class="flex items-center gap-1 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Khmer AI Dub</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Multi-Track Canvas Waveform Area -->
+        <div class="flex-1 relative overflow-x-auto bg-slate-950/80 rounded-lg mt-1 border border-slate-800/80 flex flex-col justify-around p-1 select-none" id="timelineCanvasWrapper">
+            
+            <!-- Red Timeline Playhead Marker -->
+            <div id="playheadMarker" class="absolute top-0 bottom-0 w-[2px] bg-rose-500 z-20 pointer-events-none left-[25%]" style="box-shadow: 0 0 8px #f43f5e;">
+                <div class="w-3 h-3 bg-rose-500 -ml-[5px] rotate-45 rounded-sm"></div>
+            </div>
+
+            <!-- Track 1: Original Video Track -->
+            <div class="h-7 bg-slate-900/90 rounded border border-slate-800/80 flex items-center px-2 relative overflow-hidden group">
+                <span class="text-[10px] font-bold text-cyan-400 w-24 shrink-0"><i class="fa-solid fa-video mr-1"></i> Video Track</span>
+                <div class="flex-1 h-full flex items-center space-x-1 opacity-70">
+                    <div class="w-full h-5 bg-cyan-950/60 border border-cyan-800/50 rounded flex items-center px-2 text-[10px] text-cyan-300 truncate">
+                        🎬 Main_Video_Track_Chinese_Drama.mp4 (1080p)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Track 2: Original Audio Waveform Visualizer -->
+            <div class="h-8 bg-slate-900/90 rounded border border-slate-800/80 flex items-center px-2 relative overflow-hidden">
+                <span class="text-[10px] font-bold text-amber-400 w-24 shrink-0"><i class="fa-solid fa-file-audio mr-1"></i> Orig Audio</span>
+                <div id="origWaveformContainer" class="flex-1 h-full flex items-center gap-[2px] px-1 overflow-hidden">
+                    <!-- Waveform Bars generated via JS -->
+                </div>
+            </div>
+
+            <!-- Track 3: Khmer AI Dubbed Audio Track Blocks -->
+            <div class="h-9 bg-slate-900/90 rounded border border-slate-800/80 flex items-center px-2 relative overflow-hidden">
+                <span class="text-[10px] font-bold text-emerald-400 w-24 shrink-0"><i class="fa-solid fa-microphone-slash mr-1"></i> Khmer Dub</span>
+                <div id="dubTrackBlocksContainer" class="flex-1 h-full relative flex items-center">
+                    <!-- Dynamic Dialogue Audio Blocks rendered via JS -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ================= EXPORT & RENDERING PROGRESS MODAL ================= -->
+    <div id="exportModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="glass-panel w-full max-w-lg rounded-2xl border border-slate-700 p-6 shadow-2xl relative flex flex-col gap-4">
+            
+            <button onclick="closeExportModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-2xl">
+                    <i class="fa-solid fa-file-video"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-100 text-base">Export វីដេអូបញ្ចូលសំឡេងចុងក្រោយ</h3>
+                    <p class="text-xs text-slate-400">FFmpeg Multi-Track Audio Merging Engine</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs font-mono">
+                    <span id="exportStatusText" class="text-cyan-400">កំពុងដំណើរការបញ្ចូលសំឡេងខ្មែរ...</span>
+                    <span id="exportPercentage" class="text-emerald-400 font-bold">0%</span>
+                </div>
+                <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-800 p-0.5">
+                    <div id="exportProgressBar" class="h-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-emerald-400 rounded-full w-0 transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <!-- Console Log Box -->
+            <div id="exportLogBox" class="h-32 bg-slate-950 rounded-lg border border-slate-800 p-2 font-mono text-[11px] text-slate-400 overflow-y-auto space-y-1">
+                <p class="text-slate-500">[System] Initializing FFmpeg WebAssembly core...</p>
+            </div>
+
+            <!-- Download Button (Shown when complete) -->
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+                <button onclick="closeExportModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">បិទ (Close)</button>
+                <button id="downloadVideoBtn" onclick="triggerDownload()" disabled class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-extrabold rounded-lg text-xs flex items-center space-x-2 shadow-lg shadow-emerald-500/20 transition">
+                    <i class="fa-solid fa-download"></i>
+                    <span>ទាញយកវីដេអូ (.MP4)</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ================= JAVASCRIPT LOGIC ENGINE ================= -->
+    <script>
+        // --- DEFAULT SAMPLE CHINESE DRAMA DIALOGUE DATA ---
+        let sampleSubtitles = [
+            { id: 1, start: "00:00:01", end: "00:00:04", speaker: "narrator", orig: "全要成了 救命啊元叔月救命！", khmer: "ជិតជោគជ័យហើយ ជួយផងលោកពូយួន និងអ្នកនាងយៀក!", voice: "DeepNarrator" },
+            { id: 2, start: "00:00:05", end: "00:00:09", speaker: "male", orig: "你們快上來 我拉你們上來 成大人！", khmer: "អ្នកទាំងអស់គ្នាប្រញាប់ឡើងមក ខ្ញុំជួយទាញឡើងមក លោកម្ចាស់ឆេង!", voice: "PisethNeural" },
+            { id: 3, start: "00:00:10", end: "00:00:15", speaker: "female", orig: "如果女兒懷上去 了你抓紋啊生子快磨斷了！", khmer: "បើកូនស្រីឡើងទៅលើបាន អ្នកត្រូវតែតោងឱ្យជាប់ ខ្សែពួរជិតដាច់ហើយ!", voice: "SreymomNeural" },
+            { id: 4, start: "00:00:16", end: "00:00:20", speaker: "male", orig: "大人 抓緊 傳身死亡趕緊不是吧！", khmer: "លោកម្ចាស់ តោងឱ្យជាប់! ប្រញាប់ឡើង កុំឱ្យមានគ្រោះថ្នាក់!", voice: "PisethNeural" },
+            { id: 5, start: "00:00:21", end: "00:00:26", speaker: "female", orig: "快點！我們沒有太多時間了！", khmer: "ប្រញាប់ឡើង! ពួកយើងមិនមានពេលច្រើនទៀតទេ!", voice: "SreymomNeural" },
+            { id: 6, start: "00:00:27", end: "00:00:32", speaker: "narrator", orig: "在這生死攸關的時刻，究竟誰能存活？", khmer: "នៅក្នុងខណៈពេលរវាងជីវិត និងសេចក្តីស្លាប់នេះ តើនរណាអាចរស់រានមានជីវិត?", voice: "DeepNarrator" }
+        ];
+
+        // Global DOM Elements Reference
+        const mainVideo = document.getElementById('mainVideo');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const videoProgressBar = document.getElementById('videoProgressBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const subtitleListContainer = document.getElementById('subtitleListContainer');
+        const subOverlayText = document.getElementById('subOverlayText');
+        const origWaveformContainer = document.getElementById('origWaveformContainer');
+        const dubTrackBlocksContainer = document.getElementById('dubTrackBlocksContainer');
+
+        // Page Onload Initialization
+        window.onload = function() {
+            renderSubtitleTable();
+            generateWaveformCanvas();
+            renderTimelineDubBlocks();
+            setupVideoListeners();
+        };
+
+        // --- RENDER SUBTITLE EDITING TABLE ---
+        function renderSubtitleTable() {
+            subtitleListContainer.innerHTML = '';
+
+            sampleSubtitles.forEach((sub, index) => {
+                const row = document.createElement('div');
+                row.className = "grid grid-cols-12 gap-2 p-2 bg-slate-900/60 hover:bg-slate-800/80 rounded-lg border border-slate-800/80 items-center transition text-xs sub-row-item";
+                row.dataset.id = sub.id;
+
+                row.innerHTML = `
+                    <!-- Timecode & Index -->
+                    <div class="col-span-1 flex flex-col items-center justify-center font-mono text-[10px] text-slate-400">
+                        <span class="text-cyan-400 font-bold">#${index + 1}</span>
+                        <span>${sub.start}</span>
+                        <span class="text-slate-600">↓</span>
+                        <span>${sub.end}</span>
+                    </div>
+
+                    <!-- Speaker Role Selector -->
+                    <div class="col-span-2">
+                        <select onchange="updateRowSpeaker(${sub.id}, this.value)" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-[11px] rounded p-1.5 focus:outline-none focus:border-cyan-500">
+                            <option value="male" ${sub.speaker === 'male' ? 'selected' : ''}>👨 ប្រុស (Male)</option>
+                            <option value="female" ${sub.speaker === 'female' ? 'selected' : ''}>👩 ស្រី (Female)</option>
+                            <option value="narrator" ${sub.speaker === 'narrator' ? 'selected' : ''}>🎙️ សម្រាយរឿង</option>
+                        </select>
+                    </div>
+
+                    <!-- Original Chinese Text -->
+                    <div class="col-span-4">
+                        <textarea onchange="updateRowOrig(${sub.id}, this.value)" rows="2" class="w-full bg-slate-950/80 border border-slate-800 text-amber-300/90 rounded p-1.5 text-xs font-mono resize-none focus:outline-none focus:border-amber-500">${sub.orig}</textarea>
+                    </div>
+
+                    <!-- Khmer Translated Text -->
+                    <div class="col-span-4">
+                        <textarea onchange="updateRowKhmer(${sub.id}, this.value)" rows="2" class="w-full bg-slate-950 border border-slate-700 text-emerald-400 rounded p-1.5 text-xs font-khmer resize-none focus:outline-none focus:border-emerald-500 font-semibold">${sub.khmer}</textarea>
+                    </div>
+
+                    <!-- Row Action Play Sample Voice Button -->
+                    <div class="col-span-1 flex items-center justify-center space-x-1">
+                        <button onclick="previewRowVoice('${escapeQuotes(sub.khmer)}', '${sub.speaker}')" class="w-7 h-7 rounded-lg bg-indigo-950 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-700/60 flex items-center justify-center transition" title="ស្ដាប់សំឡេង AI">
+                            <i class="fa-solid fa-volume-high text-xs"></i>
+                        </button>
+                        <button onclick="deleteRow(${sub.id})" class="w-7 h-7 rounded-lg bg-rose-950/60 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-800/60 flex items-center justify-center transition" title="លុបជួរនេះ">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                subtitleListContainer.appendChild(row);
+            });
+
+            document.getElementById('subCountSummary').innerHTML = `សរុប៖ <strong class="text-slate-200">${sampleSubtitles.length} ឃ្លា</strong>`;
+            renderTimelineDubBlocks();
+        }
+
+        // Helper to safely escape string quotes
+        function escapeQuotes(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        // --- SUBTITLE TABLE ACTIONS ---
+        function updateRowSpeaker(id, val) {
+            let item = sampleSubtitles.find(s => s.id === id);
+            if(item) item.speaker = val;
+            renderTimelineDubBlocks();
+        }
+
+        function updateRowOrig(id, val) {
+            let item = sampleSubtitles.find(s => s.id === id);
+            if(item) item.orig = val;
+        }
+
+        function updateRowKhmer(id, val) {
+            let item = sampleSubtitles.find(s => s.id === id);
+            if(item) item.khmer = val;
+            renderTimelineDubBlocks();
+        }
+
+        function deleteRow(id) {
+            sampleSubtitles = sampleSubtitles.filter(s => s.id !== id);
+            renderSubtitleTable();
+        }
+
+        function addNewSubtitleRow() {
+            const nextId = sampleSubtitles.length > 0 ? Math.max(...sampleSubtitles.map(s => s.id)) + 1 : 1;
+            sampleSubtitles.push({
+                id: nextId,
+                start: "00:00:33",
+                end: "00:00:38",
+                speaker: "male",
+                orig: "新句子...",
+                khmer: "ឃ្លាសន្ទនាថ្មី...",
+                voice: "PisethNeural"
+            });
+            renderSubtitleTable();
+        }
+
+        // --- SPEECH SYNTHESIS VOICE PREVIEW (Native Web Speech API) ---
+        function previewRowVoice(text, speaker) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop ongoing speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // Try finding Khmer or fallback Asian voice
+                const voices = window.speechSynthesis.getVoices();
+                const khmerVoice = voices.find(v => v.lang.includes('km') || v.lang.includes('kh'));
+                if (khmerVoice) utterance.voice = khmerVoice;
+
+                utterance.rate = parseFloat(document.getElementById('voiceSpeedSlider').value) || 1.0;
+                
+                if (speaker === 'female') utterance.pitch = 1.3;
+                else if (speaker === 'male') utterance.pitch = 0.9;
+                else utterance.pitch = 0.7; // Narrator deep
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('កម្មវិធីរុករករបស់អ្នកមិនគាំទ្រ Preview SpeechSynthesis ទេ!');
+            }
+        }
+
+        // --- WHISPER SPEECH RECOGNITION SIMULATION ---
+        function runWhisperTranscribe() {
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>កំពុងទាញយកសំឡេង...</span>`;
+            btn.disabled = true;
+
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                alert("✅ ចាប់បានអត្ថបទដើមចំនួន " + sampleSubtitles.length + " ឃ្លា ពី Whisper AI Pro!");
+            }, 1800);
+        }
+
+        // --- GEMINI AI AUTO-TRANSLATE TO KHMER SIMULATION ---
+        function runAutoTranslate() {
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-yellow-300"></i> <span>កំពុងបកប្រែជាខ្មែរ...</span>`;
+            btn.disabled = true;
+
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                renderSubtitleTable();
+                alert("🎉 បានបកប្រែជាភាសាខ្មែរជោគជ័យ 100% តាមរយៈ Gemini Pro Translation Engine!");
+            }, 2000);
+        }
+
+        // --- VIDEO PLAYER LISTENERS & CONTROLS ---
+        function setupVideoListeners() {
+            mainVideo.ontimeupdate = function() {
+                if(!mainVideo.duration) return;
+                const percentage = (mainVideo.currentTime / mainVideo.duration) * 100;
+                videoProgressBar.value = percentage;
+                
+                // Update Time Display
+                timeDisplay.innerText = `${formatTime(mainVideo.currentTime)} / ${formatTime(mainVideo.duration)}`;
+                document.getElementById('timelineMarkerCode').innerText = `Timecode: 00:${formatTime(mainVideo.currentTime)}.00`;
+
+                // Move Red Timeline Playhead Marker
+                const playhead = document.getElementById('playheadMarker');
+                playhead.style.left = `${percentage}%`;
+
+                // Sync Live Subtitle Overlay Text
+                updateLiveSubtitleOverlay(mainVideo.currentTime);
+            };
+
+            videoProgressBar.oninput = function() {
+                if(!mainVideo.duration) return;
+                mainVideo.currentTime = (videoProgressBar.value / 100) * mainVideo.duration;
+            };
+
+            document.getElementById('volumeControl').oninput = function() {
+                mainVideo.volume = this.value;
+            };
+        }
+
+        function togglePlay() {
+            if (mainVideo.paused) {
+                mainVideo.play();
+                playPauseBtn.innerHTML = `<i class="fa-solid fa-pause text-xs"></i>`;
+            } else {
+                mainVideo.pause();
+                playPauseBtn.innerHTML = `<i class="fa-solid fa-play text-xs"></i>`;
+            }
+        }
+
+        function skipTime(seconds) {
+            mainVideo.currentTime = Math.max(0, Math.min(mainVideo.duration || 0, mainVideo.currentTime + seconds));
+        }
+
+        function changeSpeed(val) {
+            mainVideo.playbackRate = parseFloat(val);
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        // Live Subtitle Overlay Sync
+        function updateLiveSubtitleOverlay(currentTime) {
+            // Find current subtitle row
+            let matched = sampleSubtitles.find(s => {
+                let startSec = parseTimeToSec(s.start);
+                let endSec = parseTimeToSec(s.end);
+                return currentTime >= startSec && currentTime <= endSec;
+            });
+
+            if (matched) {
+                subOverlayText.innerText = matched.khmer;
+                subOverlayText.style.display = 'inline-block';
+            } else {
+                subOverlayText.innerText = '';
+                subOverlayText.style.display = 'none';
+            }
+        }
+
+        function parseTimeToSec(timeStr) {
+            let parts = timeStr.split(':');
+            if(parts.length === 3) {
+                return parseInt(parts[0])*3600 + parseInt(parts[1])*60 + parseInt(parts[2]);
+            }
+            return 0;
+        }
+
+        // Handle File Select
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                mainVideo.src = url;
+                document.getElementById('metaFileName').innerText = file.name;
+                mainVideo.play();
+                playPauseBtn.innerHTML = `<i class="fa-solid fa-pause text-xs"></i>`;
+            }
+        }
+
+        // --- AUDIO WAVEFORM VISUALIZER GENERATOR ---
+        function generateWaveformCanvas() {
+            origWaveformContainer.innerHTML = '';
+            const barCount = 120;
+            for(let i=0; i<barCount; i++) {
+                const bar = document.createElement('div');
+                const randomHeight = Math.floor(Math.random() * 22) + 4;
+                bar.className = "waveform-bar w-[2px] bg-amber-500/60 rounded-full";
+                bar.style.height = `${randomHeight}px`;
+                origWaveformContainer.appendChild(bar);
+            }
+        }
+
+        // --- TIMELINE DUBBLOCKS RENDERER ---
+        function renderTimelineDubBlocks() {
+            dubTrackBlocksContainer.innerHTML = '';
+            sampleSubtitles.forEach((sub, idx) => {
+                const block = document.createElement('div');
+                const leftPos = (idx * 15) + 2; // Simulated timeline position
+                const width = 12;
+
+                let colorClass = "bg-emerald-900/80 border-emerald-500 text-emerald-300";
+                if(sub.speaker === 'female') colorClass = "bg-pink-900/80 border-pink-500 text-pink-300";
+                if(sub.speaker === 'narrator') colorClass = "bg-amber-900/80 border-amber-500 text-amber-300";
+
+                block.className = `absolute h-6 ${colorClass} border rounded text-[9px] px-1 flex items-center justify-between font-mono truncate shadow-md`;
+                block.style.left = `${leftPos}%`;
+                block.style.width = `${width}%`;
+                block.innerHTML = `<span class="truncate">${sub.khmer}</span>`;
+                
+                dubTrackBlocksContainer.appendChild(block);
+            });
+        }
+
+        function zoomTimeline(direction) {
+            const canvasWrapper = document.getElementById('timelineCanvasWrapper');
+            let currentWidth = canvasWrapper.style.width || '100%';
+            if(direction > 0) {
+                canvasWrapper.style.minWidth = '160%';
+            } else {
+                canvasWrapper.style.minWidth = '100%';
+            }
+        }
+
+        // --- FULL DUBBING & EXPORT PROCESS MODAL ---
+        function startFullDubbingProcess() {
+            openExportModal();
+        }
+
+        function openExportModal() {
+            const modal = document.getElementById('exportModal');
+            modal.classList.remove('hidden');
+            
+            const progressBar = document.getElementById('exportProgressBar');
+            const percentageText = document.getElementById('exportPercentage');
+            const statusText = document.getElementById('exportStatusText');
+            const logBox = document.getElementById('exportLogBox');
+            const downloadBtn = document.getElementById('downloadVideoBtn');
+
+            progressBar.style.width = '0%';
+            percentageText.innerText = '0%';
+            downloadBtn.disabled = true;
+
+            let logs = [
+                "[00:01] ផ្ទៀងផ្ទាត់ទិន្នន័យអត្ថបទខ្មែរ...",
+                "[00:02] បង្កើតសំឡេងខ្មែរតាម Edge-TTS Neural (Piseth & Sreymom)...",
+                "[00:04] កែសម្រួល Pitch / Speed និង Audio Ducking 15%...",
+                "[00:06] ផ្គុំបណ្តាញសំឡេងខ្មែរជាមួយ FFmpeg WebAssembly Core...",
+                "[00:08] រៀបចំទិន្នន័យ Video Multiplexing 1080p...",
+                "[00:10] បញ្ចប់ការ Export វីដេអូពេញលេញជាស្ថាពរ!"
+            ];
+
+            let step = 0;
+            let interval = setInterval(() => {
+                step++;
+                let percent = Math.min(100, step * 20);
+                progressBar.style.width = `${percent}%`;
+                percentageText.innerText = `${percent}%`;
+
+                if(step <= logs.length) {
+                    const p = document.createElement('p');
+                    p.innerText = logs[step - 1];
+                    p.className = "text-emerald-400 font-mono";
+                    logBox.appendChild(p);
+                    logBox.scrollTop = logBox.scrollHeight;
+                }
+
+                if(percent >= 100) {
+                    clearInterval(interval);
+                    statusText.innerText = "🎉 បង្កើតវីដេអូបញ្ចូលសំឡេងខ្មែរជោគជ័យ 100%!";
+                    downloadBtn.disabled = false;
+                }
+            }, 800);
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        function triggerDownload() {
+            alert("📥 វីដេអូរបស់អ្នក (khmer_dubbed_video_pro.mp4) កំពុងត្រូវបានទាញយក!");
+        }
+
+        function saveProject() {
+            alert("💾 Project 'Movie_Time_Khmer_Dub.mtproj' ត្រូវបានរក្សាទុកដោយជោគជ័យ!");
+        }
+
+        function resetStudio() {
+            if(confirm("តើអ្នកពិតជាចង់ Reset Studio ទាំងមូលមែនទេ?")) {
+                location.reload();
+            }
+        }
+
+        function filterSubtitleRows() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.sub-row-item');
+            rows.forEach(r => {
+                const text = r.innerText.toLowerCase();
+                r.style.display = text.includes(query) ? 'grid' : 'none';
+            });
+        }
+
+        function importSRTFile(e) {
+            const file = e.target.files[0];
+            if(file) {
+                alert(`✅ បានបើកហ្វាល់ SRT (${file.name}) ដោយជោគជ័យ!`);
+            }
+        }
+
+        function exportSRTFile() {
+            let srtContent = "";
+            sampleSubtitles.forEach((s, i) => {
+                srtContent += `${i + 1}\n00:${s.start},000 --> 00:${s.end},000\n${s.khmer}\n\n`;
+            });
+
+            const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "Khmer_Dub_Subtitles.srt";
+            a.click();
+        }
+    </script>
+</body>
+</html>
