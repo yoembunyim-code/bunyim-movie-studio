@@ -7,7 +7,7 @@ from deep_translator import GoogleTranslator
 
 # Set page configuration
 st.set_page_config(
-    page_title="Movie Time Studio Pro - Auto Translate Studio",
+    page_title="Movie Time Studio Pro - Auto Khmer Studio",
     page_icon="🎬",
     layout="wide"
 )
@@ -29,12 +29,12 @@ st.markdown("""
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #0F1420; border-radius: 10px; border: 1px solid #1E293B; margin-bottom: 20px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                MOVIE TIME STUDIO PRO - AUTO TRANSLATE & DUBBING
+                MOVIE TIME STUDIO PRO - KHMER TRANSLATE STUDIO
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកអត្ថបទពីវីដេអូ និងបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ ១០០% (Whisper + Deep Translator)</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកអត្ថបទ និងបកប្រែជាភាសាខ្មែរ ១០០% ព្រមទាំងប៊ូតុងบังคับបកប្រែបន្ថែម</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Auto-Translate Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Studio Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -53,8 +53,8 @@ with col_left:
         st.info("📌 សូម Upload វីដេអូប្រភេទ MP4 ដើម្បីចាប់ផ្តើម។")
 
     st.markdown("---")
-    st.markdown("### 💡 របៀបប្រើប្រាស់៖")
-    st.info("1. Upload វីដេអូរបស់អ្នក។\n2. ចុចប៊ូតុង **'🪄 ទាញយក និងបកប្រែជាខ្មែរស្វ័យប្រវត្តិ'**។\n3. ប្រព័ន្ធនឹងបំពេញម៉ោង និងអត្ថបទបកប្រែជាខ្មែរចូលក្នុងតារាងដោយស្វ័យប្រវត្តិ!")
+    st.markdown("### 💡 គន្លឹះដោះស្រាយ៖")
+    st.info("ប្រសិនបើអត្ថបទណាមួយនៅជាអង់គ្លេស អ្នកអាចចុចប៊ូតុង **'🌐 បកប្រែអត្ថបទទាំងអស់ជាខ្មែរ'** នៅកណ្តាល màn hình បានគ្រប់ពេលវេលាដើម្បីប្តូរជាខ្មែរភ្លាមៗ។")
 
 with col_center:
     st.markdown("### 📝 តារាងគ្រប់គ្រងថិរវេលា និងអត្ថបទបកប្រែខ្មែរ")
@@ -62,8 +62,8 @@ with col_center:
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
-    # Button to Extract Audio & Translate to Khmer automatically
-    if st.button("🪄 ទាញយក និងបកប្រែជាខ្មែរស្វ័យប្រវត្តិ (Auto-Translate)"):
+    # 1. Extract Button
+    if st.button("🪄 ១. ទាញយកអត្ថបទពីវីដេអូ និងបកប្រែជាខ្មែរ"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -90,19 +90,18 @@ with col_center:
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
                 
-                status_text.text("⏳ កំពុងបកប្រែអត្ថបទទាំងអស់ទៅជាភាសាខ្មែរ...")
+                status_text.text("⏳ កំពុងបកប្រែអត្ថបទជាភាសាខ្មែរ...")
                 progress_bar.progress(80)
                 
                 translator = GoogleTranslator(source='auto', target='km')
                 st.session_state.auto_subtitles = []
                 
-                for idx, segment in enumerate(result["segments"]):
+                for segment in result["segments"]:
                     start_time = segment["start"]
                     end_time = segment["end"]
                     duration = end_time - start_time
                     original_text = segment["text"]
                     
-                    # Translate to Khmer with fallback protection
                     khmer_text = original_text
                     try:
                         translated = translator.translate(original_text)
@@ -119,8 +118,8 @@ with col_center:
                     })
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 ទាញយក និងបកប្រែជាខ្មែរជោគជ័យ ១០០%!")
-                st.success("✅ អត្ថបទត្រូវបានទាញយក និងបកប្រែជាភាសាខ្មែររួចរាល់ក្នុងតារាង!")
+                status_text.text("🎉 ទាញយក និងបកប្រែជោគជ័យ ១០០%!")
+                st.success("✅ បានទាញយក និងបកប្រែអត្ថបទរួចរាល់!")
                 st.rerun()
                 
             except Exception as e:
@@ -128,8 +127,22 @@ with col_center:
         else:
             st.warning("⚠️ សូម Upload វីដេអូមុនសិន!")
 
-    # Display Subtitles Table
+    # 2. Force Translate Button
     if st.session_state.auto_subtitles:
+        if st.button("🌐 ២. បកប្រែអត្ថបទទាំងអស់ជាខ្មែរបន្ថែម (Force Translate to Khmer)"):
+            translator = GoogleTranslator(source='auto', target='km')
+            for idx, sub in enumerate(st.session_state.auto_subtitles):
+                current_text = sub["khmer"]
+                try:
+                    translated = translator.translate(current_text)
+                    if translated:
+                        st.session_state.auto_subtitles[idx]["khmer"] = translated
+                except Exception:
+                    pass
+            st.success("✅ បានបកប្រែអត្ថបទទាំងអស់ជាភាសាខ្មែរជោគជ័យ!")
+            st.rerun()
+
+        # Display Subtitles Table
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             cols = st.columns([0.8, 0.8, 1.2, 3])
             with cols[0]:
@@ -144,7 +157,7 @@ with col_center:
         st.markdown("---")
         st.markdown("### 🚀 បញ្ចូលសំឡេង AI ខ្មែរ និង Export វីដេអូចុងក្រោយ")
         
-        if st.button("🎬 ចាប់ផ្តើម Render វីដេអូបញ្ចូលសម្លេងខ្មែរ"):
+        if st.button("🎬 ៣. ចាប់ផ្តើម Render វីដេអូបញ្ចូលសម្លេងខ្មែរ"):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -231,16 +244,16 @@ with col_center:
                     
                     progress_bar.progress(100)
                     status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសម្លេងជោគជ័យ ១០០%!")
-                    st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render ជាមួយសម្លេងខ្មែរស្វ័យប្រវត្តិរួចរាល់!")
+                    st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render ជាមួយសម្លេងខ្មែររួចរាល់!")
                     
                     with open(output_video_path, "rb") as file:
                         st.download_button(
                             label="📥 ទាញយកវីដេអូចុងក្រោយ (.MP4)",
                             data=file,
-                            file_name="auto_khmer_translated_movie.mp4",
+                            file_name="khmer_dubbed_studio.mp4",
                             mime="video/mp4"
                         )
                 except Exception as e:
-                    st.error(f"❌ កើតកំហុសក្នុងដំណើរការ Render: {e}")
+                    st.error(f"❌ កើតកំហុសໃນដំណើរការ Render: {e}")
     else:
-        st.info("👆 សូម Upload វីដេអូ និងចុចប៊ូតុង **'🪄 ទាញយក និងបកប្រែជាខ្មែរស្វ័យប្រវត្តិ'** ដើម្បីចាប់ផ្តើម។")
+        st.info("👆 សូម Upload វីដេអូ និងចុចប៊ូតុងទី ១ ដើម្បីចាប់ផ្តើម។")
