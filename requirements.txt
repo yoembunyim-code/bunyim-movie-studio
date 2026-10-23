@@ -1,5 +1,4 @@
 streamlit
 edge-tts
 openai-whisper
-httpx==0.23.3
 googletrans==4.0.0-rc1
