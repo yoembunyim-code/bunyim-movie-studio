@@ -3,7 +3,7 @@ import os
 import subprocess
 import tempfile
 import whisper
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 
 # Set page configuration
 st.set_page_config(
@@ -31,10 +31,10 @@ st.markdown("""
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                 MOVIE TIME STUDIO PRO - AUTO KHMER TRANSLATE & DUBBING
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង និងបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ ១០០% (Whisper + Googletrans)</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង និងបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ (Whisper + Deep Translator)</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Auto-Translate Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Stable AI Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -54,7 +54,7 @@ with col_left:
 
     st.markdown("---")
     st.markdown("### 🤖 ប្រព័ន្ធ AI ស្វ័យប្រវត្តិ៖")
-    st.info("ប្រព័ន្ធនឹងទាញយកឃ្លានិយាយពីវីដេអូ និងបកប្រែផ្ទាល់ជា **ភាសាខ្មែរ** យ៉ាងឆាប់រហ័ស។")
+    st.info("ប្រព័ន្ធនឹងទាញយកឃ្លានិយាយពីវីដេអូ និងបកប្រែផ្ទាល់ជា **ភាសាខ្មែរ** ដោយប្រើប្រាស់ Deep Translator อย่างเสถียร។")
 
 with col_center:
     st.markdown("### 📝 តារាងអត្ថបទបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ")
@@ -94,7 +94,7 @@ with col_center:
                 status_text.text("⏳ កំពុងបកប្រែអត្ថបទទាំងអស់ទៅជាភាសាខ្មែរ...")
                 progress_bar.progress(75)
                 
-                translator = Translator()
+                translator = GoogleTranslator(source='auto', target='km')
                 
                 for segment in result["segments"]:
                     start_time = segment["start"]
@@ -104,9 +104,9 @@ with col_center:
                     
                     khmer_text = original_text
                     try:
-                        translation = translator.translate(original_text, dest='km')
-                        if translation and translation.text:
-                            khmer_text = translation.text
+                        translation = translator.translate(original_text)
+                        if translation:
+                            khmer_text = translation
                     except Exception:
                         pass
                         
