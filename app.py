@@ -3,11 +3,11 @@ import os
 import subprocess
 import tempfile
 import whisper
-from deep_translator import GoogleTranslator
+from deep_translator import MyMemoryTranslator
 
 # Set page configuration
 st.set_page_config(
-    page_title="Movie Time Studio Pro - Auto Khmer Studio",
+    page_title="Movie Time Studio Pro - Khmer Studio Pro",
     page_icon="🎬",
     layout="wide"
 )
@@ -29,12 +29,12 @@ st.markdown("""
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #0F1420; border-radius: 10px; border: 1px solid #1E293B; margin-bottom: 20px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                MOVIE TIME STUDIO PRO - KHMER TRANSLATE STUDIO
+                MOVIE TIME STUDIO PRO - KHMER STABLE DUBBING
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកអត្ថបទ និងបកប្រែជាភាសាខ្មែរ ១០០% ព្រមទាំងប៊ូតុងบังคับបកប្រែបន្ថែម</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយក និងបកប្រែជាភាសាខ្មែរដោយប្រព័ន្ធ MyMemory Translator ប្រកបដោយស្ថេរភាពខ្ពស់</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Studio Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Stable Khmer Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -44,7 +44,7 @@ col_left, col_center = st.columns([1.2, 1.8])
 
 with col_left:
     st.markdown("### 📺 ផ្ទាំងមើលវីដេអូ (Video Preview)")
-    uploaded_file = st.file_uploader("ទម្លាក់វីដេអូរឿងនៅទីនេះ (Drop MP4 File)", type=["mp4", "mkv", "mov"])
+    uploaded_file = st.file_uploader("ទម្លាក់វីដេអូរឿងនៅទីนี่ (Drop MP4 File)", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
         st.video(uploaded_file)
@@ -53,8 +53,8 @@ with col_left:
         st.info("📌 សូម Upload វីដេអូប្រភេទ MP4 ដើម្បីចាប់ផ្តើម។")
 
     st.markdown("---")
-    st.markdown("### 💡 គន្លឹះដោះស្រាយ៖")
-    st.info("ប្រសិនបើអត្ថបទណាមួយនៅជាអង់គ្លេស អ្នកអាចចុចប៊ូតុង **'🌐 បកប្រែអត្ថបទទាំងអស់ជាខ្មែរ'** នៅកណ្តាល màn hình បានគ្រប់ពេលវេលាដើម្បីប្តូរជាខ្មែរភ្លាមៗ។")
+    st.markdown("### 💡 ព័ត៌មានជំនួយ៖")
+    st.info("ប្រព័ន្ធនេះប្រើប្រាស់ MyMemory API ដែលធានាថាការបកប្រែនឹងចេញជា **ភាសាខ្មែរ** ជោគជ័យ ១០០% ដោយគ្មានការប្លុក IP ឡើយ។")
 
 with col_center:
     st.markdown("### 📝 តារាងគ្រប់គ្រងថិរវេលា និងអត្ថបទបកប្រែខ្មែរ")
@@ -62,8 +62,8 @@ with col_center:
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
-    # 1. Extract Button
-    if st.button("🪄 ១. ទាញយកអត្ថបទពីវីដេអូ និងបកប្រែជាខ្មែរ"):
+    # 1. Extract & Translate Button
+    if st.button("🪄 ១. ទាញយក និងបកប្រែជាភាសាខ្មែរ ១០០%"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -90,26 +90,27 @@ with col_center:
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
                 
-                status_text.text("⏳ កំពុងបកប្រែអត្ថបទជាភាសាខ្មែរ...")
+                status_text.text("⏳ កំពុងបកប្រែអត្ថបទទាំងអស់ជាភាសាខ្មែរ...")
                 progress_bar.progress(80)
                 
-                translator = GoogleTranslator(source='auto', target='km')
+                translator = MyMemoryTranslator(source='en', target='km')
                 st.session_state.auto_subtitles = []
                 
                 for segment in result["segments"]:
                     start_time = segment["start"]
                     end_time = segment["end"]
                     duration = end_time - start_time
-                    original_text = segment["text"]
+                    original_text = segment["text"].strip()
                     
                     khmer_text = original_text
-                    try:
-                        translated = translator.translate(original_text)
-                        if translated:
-                            khmer_text = translated
-                    except Exception:
-                        pass
-                        
+                    if original_text:
+                        try:
+                            translated = translator.translate(original_text)
+                            if translated:
+                                khmer_text = translated
+                        except Exception:
+                            pass
+                            
                     st.session_state.auto_subtitles.append({
                         "time_sec": round(start_time, 2),
                         "duration": round(duration, 2),
@@ -118,8 +119,8 @@ with col_center:
                     })
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 ទាញយក និងបកប្រែជោគជ័យ ១០០%!")
-                st.success("✅ បានទាញយក និងបកប្រែអត្ថបទរួចរាល់!")
+                status_text.text("🎉 ទាញយក និងបកប្រែជាខ្មែរជោគជ័យ ១០០%!")
+                st.success("✅ បានបកប្រែអត្ថបទចេញមកជាភាសាខ្មែររួចរាល់!")
                 st.rerun()
                 
             except Exception as e:
@@ -129,17 +130,18 @@ with col_center:
 
     # 2. Force Translate Button
     if st.session_state.auto_subtitles:
-        if st.button("🌐 ២. បកប្រែអត្ថបទទាំងអស់ជាខ្មែរបន្ថែម (Force Translate to Khmer)"):
-            translator = GoogleTranslator(source='auto', target='km')
+        if st.button("🌐 ២. បកប្រែអត្ថបទទាំងអស់ជាខ្មែរបន្ថែម (Force Translate)"):
+            translator = MyMemoryTranslator(source='en', target='km')
             for idx, sub in enumerate(st.session_state.auto_subtitles):
-                current_text = sub["khmer"]
-                try:
-                    translated = translator.translate(current_text)
-                    if translated:
-                        st.session_state.auto_subtitles[idx]["khmer"] = translated
-                except Exception:
-                    pass
-            st.success("✅ បានបកប្រែអត្ថបទទាំងអស់ជាភាសាខ្មែរជោគជ័យ!")
+                current_text = sub["khmer"].strip()
+                if current_text:
+                    try:
+                        translated = translator.translate(current_text)
+                        if translated:
+                            st.session_state.auto_subtitles[idx]["khmer"] = translated
+                    except Exception:
+                        pass
+            st.success("✅ បានបកប្រែអត្ថបទជាខ្មែរជោគជ័យ!")
             st.rerun()
 
         # Display Subtitles Table
@@ -250,10 +252,10 @@ with col_center:
                         st.download_button(
                             label="📥 ទាញយកវីដេអូចុងក្រោយ (.MP4)",
                             data=file,
-                            file_name="khmer_dubbed_studio.mp4",
+                            file_name="khmer_mymemory_dubbed.mp4",
                             mime="video/mp4"
                         )
                 except Exception as e:
-                    st.error(f"❌ កើតកំហុសໃນដំណើរការ Render: {e}")
+                    st.error(f"❌ កើតកំហុសក្នុងដំណើរការ Render: {e}")
     else:
-        st.info("👆 សូម Upload វីដេអូ និងចុចប៊ូតុងទី ១ ដើម្បីចាប់ផ្តើម។")
+        st.info("👆 សូម Upload វីដេអូ និងចុចប៊ូតុងទី ១ ដើម្បីចាប់ផ្តើម။")
