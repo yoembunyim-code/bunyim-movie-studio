@@ -7,7 +7,7 @@ from translate import Translator
 
 # Set page configuration
 st.set_page_config(
-    page_title="Movie Time Studio Pro - Translate Library",
+    page_title="Movie Time Studio Pro - Final Fix Dubbing",
     page_icon="🎬",
     layout="wide"
 )
@@ -29,12 +29,12 @@ st.markdown("""
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #0F1420; border-radius: 10px; border: 1px solid #1E293B; margin-bottom: 20px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                MOVIE TIME STUDIO PRO - TRANSLATE LIBRARY DUBBING
+                MOVIE TIME STUDIO PRO - STABLE RENDER FIX
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង និងបកប្រែជាភាសាខ្មែរដោយไลប្រារី Translate ដែលមានស្ថេរភាពខ្ពស់</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង និង Render វីដេអូបញ្ចូលសម្លេង AI ខ្មែរដោយសុវត្ថិភាព ១០០%</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Translate Lib Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Render Fix Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -54,7 +54,7 @@ with col_left:
 
     st.markdown("---")
     st.markdown("### 💡 ព័ត៌មានប្រព័ន្ធ៖")
-    st.info("ប្រើប្រាស់ไลប្រារី `translate` ដែលមានភាពរលូន និងមិនសូវជួបបញ្ហា IP Block លើ Streamlit Cloud។")
+    st.info("ប្រព័ន្ធត្រូវបានកែសម្រួលដើម្បីការពារកំហុស Render 0 B និងធានាថាវីដេអូអាច Download បានយ៉ាងរលូន។")
 
 with col_center:
     st.markdown("### 📝 តារាងគ្រប់គ្រងថិរវេលា និងអត្ថបទបកប្រែខ្មែរ")
@@ -174,11 +174,13 @@ with col_center:
                     tfile.close()
                     
                     audio_inputs = []
+                    valid_subtitles = []
                     
                     for i, sub in enumerate(st.session_state.auto_subtitles):
                         if not sub["khmer"].strip():
                             continue
                             
+                        valid_subtitles.append(sub)
                         status_text.text(f"⏳ កំពុងបង្កើតសម្លេង AI ខ្មែរសម្រាប់ឃ្លាទី {i+1}...")
                         
                         voice = "km-KH-PisethNeural" if sub["speaker"] == "តួប្រុស" else "km-KH-SreymomNeural"
@@ -193,69 +195,73 @@ with col_center:
                         subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         audio_inputs.extend(["-i", line_audio_path])
                     
-                    progress_bar.progress(60)
-                    status_text.text("⏳ កំពុងប្រើប្រាស់ FFmpeg ដើម្បីលុបសម្លេងដើម និងផ្គុំសម្លេង AI...")
-                    
-                    output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-                    
-                    filter_complex_parts = []
-                    mix_inputs = []
-                    active_sub_count = 0
-                    
-                    for i, sub in enumerate(st.session_state.auto_subtitles):
-                        if not sub["khmer"].strip():
-                            continue
+                    if not valid_subtitles:
+                        st.error("❌ គ្មានអត្ថបទសម្រាប់ Render ទេ។ សូមពិនិត្យមើលប្រអប់អត្ថបទឡើងវិញ។")
+                    else:
+                        progress_bar.progress(60)
+                        status_text.text("⏳ កំពុងប្រើប្រាស់ FFmpeg ដើម្បីផ្គុំសម្លេង AI...")
+                        
+                        output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+                        
+                        filter_complex_parts = []
+                        mix_inputs = []
+                        
+                        for idx, sub in enumerate(valid_subtitles):
+                            delay_ms = int(sub["time_sec"] * 1000)
+                            target_duration = sub["duration"]
+                            char_count = len(sub["khmer"])
+                            estimated_audio_duration = char_count / 12.0
                             
-                        delay_ms = int(sub["time_sec"] * 1000)
-                        target_duration = sub["duration"]
-                        char_count = len(sub["khmer"])
-                        estimated_audio_duration = char_count / 12.0
+                            speed_factor = 1.0
+                            if estimated_audio_duration > target_duration and target_duration > 0:
+                                speed_factor = min(round(estimated_audio_duration / target_duration, 2), 2.0)
+                            
+                            if speed_factor != 1.0:
+                                filter_complex_parts.append(f"[{idx+1}:a]atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
+                            else:
+                                filter_complex_parts.append(f"[{idx+1}:a]adelay={delay_ms}|{delay_ms}[a{idx}]")
+                                
+                            mix_inputs.append(f"[a{idx}]")
                         
-                        speed_factor = 1.0
-                        if estimated_audio_duration > target_duration and target_duration > 0:
-                            speed_factor = min(round(estimated_audio_duration / target_duration, 2), 2.0)
+                        mix_filter = "".join(mix_inputs) + f"amix=inputs={len(valid_subtitles)}:duration=longest[aout]"
+                        filter_complex_parts.append(mix_filter)
                         
-                        if speed_factor != 1.0:
-                            filter_complex_parts.append(f"[{active_sub_count+1}:a]atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{active_sub_count}]")
+                        full_filter_str = ";".join(filter_complex_parts)
+                        
+                        ffmpeg_cmd = [
+                            "ffmpeg", "-y",
+                            "-i", input_video_path
+                        ]
+                        ffmpeg_cmd.extend(audio_inputs)
+                        ffmpeg_cmd.extend([
+                            "-filter_complex", full_filter_str,
+                            "-map", "0:v",
+                            "-map", "[aout]",
+                            "-c:v", "copy",
+                            "-c:a", "aac",
+                            output_video_path
+                        ])
+                        
+                        process = subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        
+                        if process.returncode != 0:
+                            st.error(f"❌ FFmpeg Error: {process.stderr.decode('utf-8')}")
                         else:
-                            filter_complex_parts.append(f"[{active_sub_count+1}:a]adelay={delay_ms}|{delay_ms}[a{active_sub_count}]")
+                            progress_bar.progress(100)
+                            status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសម្លេងជោគជ័យ ១០០%!")
+                            st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render រួចរាល់!")
                             
-                        mix_inputs.append(f"[a{active_sub_count}]")
-                        active_sub_count += 1
-                    
-                    mix_filter = "".join(mix_inputs) + f"amix=inputs={active_sub_count}:duration=longest[aout]"
-                    filter_complex_parts.append(mix_filter)
-                    
-                    full_filter_str = ";".join(filter_complex_parts)
-                    
-                    ffmpeg_cmd = [
-                        "ffmpeg", "-y",
-                        "-i", input_video_path
-                    ]
-                    ffmpeg_cmd.extend(audio_inputs)
-                    ffmpeg_cmd.extend([
-                        "-filter_complex", full_filter_str,
-                        "-map", "0:v",
-                        "-map", "[aout]",
-                        "-c:v", "copy",
-                        "-c:a", "aac",
-                        output_video_path
-                    ])
-                    
-                    subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    
-                    progress_bar.progress(100)
-                    status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសម្លេងជោគជ័យ ១០០%!")
-                    st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render ជាមួយសម្លេងខ្មែររួចរាល់!")
-                    
-                    with open(output_video_path, "rb") as file:
-                        st.download_button(
-                            label="📥 ទាញយកវីដេអូចុងក្រោយ (.MP4)",
-                            data=file,
-                            file_name="translate_lib_dubbed.mp4",
-                            mime="video/mp4"
-                        )
+                            if os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
+                                with open(output_video_path, "rb") as file:
+                                    st.download_button(
+                                        label="📥 ទាញយកវីដេអូចុងក្រោយ (.MP4)",
+                                        data=file,
+                                        file_name="khmer_dubbed_final.mp4",
+                                        mime="video/mp4"
+                                    )
+                            else:
+                                st.error("❌ ហ្វាល់វីដេអូលទ្ធផលមានទំហំ 0 B ។ សូមลอง Render ម្ដងទៀត។")
                 except Exception as e:
-                    st.error(f"❌ កើតកំហុសក្នុងដំណើរការ Render: {e}")
+                    st.error(f"❌ កើតកំហុសในដំណើរការ Render: {e}")
     else:
         st.info("👆 សូម Upload វីដេអូ និងចុចប៊ូតុងទី ១ ដើម្បីចាប់ផ្តើម។")
