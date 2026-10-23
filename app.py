@@ -42,7 +42,7 @@ col_left, col_center = st.columns([1.2, 1.8])
 
 with col_left:
     st.markdown("### 📺 ផ្ទាំងមើលវីដេអូ (Video Preview)")
-    uploaded_file = st.file_uploader("ទម្លាក់វីដេអូរឿងនៅទីนี่ (Drop MP4 File)", type=["mp4", "mkv", "mov"])
+    uploaded_file = st.file_uploader("ទម្លាក់វីដេអូរឿងនៅទីនេះ (Drop MP4 File)", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
         st.video(uploaded_file)
@@ -52,16 +52,16 @@ with col_left:
 
     st.markdown("---")
     st.markdown("### 🎛️ ការកំណត់សំឡេងតួអង្គ (Voice Mapping)")
-    st.info("💡 ប្រព័ន្ធនឹងជ្រើសរើសសំឡេង AI ស្វ័យប្រវត្តិទៅតាមតួអង្គដែលបានកំណត់ក្នុងតារាងខាងស្តាំ៖\n- **តួប្រុស:** km-KH-PisethNeural\n- **តួស្រី:** km-KH-SreymomNeural\n- **សម្រាយរឿង:** km-KH-SreymomNeural")
+    st.info("💡 ប្រព័ន្ធនឹងជ្រើសរើសសំឡេង AI ស្វ័យប្រវត្តិទៅតាមតួអង្គក្នុងឈុតវីដេអូនាវា៖\n- **តួប្រុស (陈大人):** km-KH-PisethNeural\n- **តួស្រី/វេជ្ជបណ្ឌិត (沈青木, 云舒月):** km-KH-SreymomNeural")
 
 with col_center:
     st.markdown("### 📝 តារាងកែសម្រួលអត្ថបទសន្ទនា និងបកប្រែខ្មែរតាមតួអង្គ (Subtitle Script)")
     
     if 'subtitles' not in st.session_state:
         st.session_state.subtitles = [
-            {"time_sec": 1, "duration": 3, "speaker": "សម្រាយរឿង", "khmer": "ជិតជោគជ័យហើយ ជួយផងលោកពូយួន និងអ្នកនាងយៀក!"},
-            {"time_sec": 5, "duration": 4, "speaker": "តួប្រុស", "khmer": "អ្នកទាំងអស់គ្នាប្រញាប់ឡើងមក ខ្ញុំជួយទាញឡើងមក លោកម្ចាស់ឆេង!"},
-            {"time_sec": 10, "duration": 5, "speaker": "តួស្រី", "khmer": "បើកូនស្រីឡើងទៅលើបាន អ្នកត្រូវតែតោងឱ្យជាប់ ខ្សែពួរជិតដាច់ហើយ!"}
+            {"time_sec": 1, "duration": 3, "speaker": "តួស្រី", "khmer": "នាវាចង់លិចហើយ ជួយខ្ញុំផង!"},
+            {"time_sec": 6, "duration": 4, "speaker": "សម្រាយរឿង", "khmer": "ជិតជោគជ័យហើយ ជួយផងលោកពូយួន និងអ្នកនាងយៀក!"},
+            {"time_sec": 10, "duration": 4, "speaker": "តួប្រុស", "khmer": "អ្នកទាំងអស់គ្នាប្រញាប់ឡើងមក ខ្ញុំជួយទាញឡើងមក!"}
         ]
 
     for idx, sub in enumerate(st.session_state.subtitles):
@@ -78,7 +78,7 @@ with col_center:
     st.markdown("---")
     st.markdown("### 🚀 បញ្ចូលសំឡេងតាមតួអង្គ និង Export វីដេអូចុងក្រោយ")
     
-    if st.button("🎬 ចាប់ផ្តើម Render វីដេអូ (លុបសំឡេងដើម + ใส่សំឡេងតាមតួអង្គ)"):
+    if st.button("🎬 ចាប់ផ្តើម Render វីដេអូ (លុបសំឡេងដើម + ដាក់សំឡេងតាមតួអង្គ)"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -87,7 +87,6 @@ with col_center:
                 status_text.text("⏳ កំពុងត្រៀមទិន្នន័យវីដេអូ...")
                 progress_bar.progress(10)
                 
-                # Save uploaded video to temp file
                 tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
                 tfile.write(uploaded_file.read())
                 input_video_path = tfile.name
@@ -96,20 +95,17 @@ with col_center:
                 audio_inputs = []
                 temp_audio_files = []
                 
-                # Generate individual audio for each line based on character voice
                 for i, sub in enumerate(st.session_state.subtitles):
                     status_text.text(f"⏳ กำลังสร้างเสียง AI สำหรับประโยคที่ {i+1} ({sub['speaker']})...")
                     
-                    # Map speaker to appropriate Edge-TTS voice
                     if sub["speaker"] == "តួប្រុស":
                         voice = "km-KH-PisethNeural"
                     else:
-                        voice = "km-KH-SreymomNeural" # ស្រី និង សម្រាយរឿង
+                        voice = "km-KH-SreymomNeural"
                         
                     line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                     temp_audio_files.append(line_audio_path)
                     
-                    # Run edge-tts for this specific line
                     edge_cmd = [
                         "edge-tts",
                         "--text", sub["khmer"],
@@ -118,8 +114,6 @@ with col_center:
                     ]
                     subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     
-                    # Prepare filter complex with exact delay (adelay in milliseconds)
-                    delay_ms = int(sub["time_sec"] * 1000)
                     audio_inputs.extend(["-i", line_audio_path])
                 
                 progress_bar.progress(60)
@@ -127,14 +121,12 @@ with col_center:
                 
                 output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                 
-                # Build FFmpeg filter complex to delay each audio track and mix them together
-                # -an completely removes original video audio
                 filter_complex_parts = []
                 mix_inputs = []
                 
                 for i in range(len(st.session_state.subtitles)):
                     delay_ms = int(st.session_state.subtitles[i]["time_sec"] * 1000)
-                    filter_complex_parts.append(f"[{i}:a]adelay={delay_ms}|{delay_ms}[a{i}]")
+                    filter_complex_parts.append(f"[{i+1}:a]adelay={delay_ms}|{delay_ms}[a{i}]")
                     mix_inputs.append(f"[a{i}]")
                 
                 num_tracks = len(st.session_state.subtitles)
@@ -163,7 +155,6 @@ with col_center:
                 status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសំឡេងតាមតួអង្គជោគជ័យ 100%!")
                 st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render ដោយលុបសំឡេងដើម និងបែងចែកសំឡេងតាមតួអង្គប្រុសស្រីរួចរាល់!")
                 
-                # Download button
                 with open(output_video_path, "rb") as file:
                     st.download_button(
                         label="📥 ទាញយកវីដេអូបញ្ចូលសំឡេងតាមតួអង្គ (.MP4)",
