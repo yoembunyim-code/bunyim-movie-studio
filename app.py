@@ -3,11 +3,11 @@ import os
 import subprocess
 import tempfile
 import whisper
-from googletrans import Translator
+from translate import Translator
 
 # Set page configuration
 st.set_page_config(
-    page_title="Movie Time Studio Pro - Final Khmer Dubbing",
+    page_title="Movie Time Studio Pro - Translate Library",
     page_icon="🎬",
     layout="wide"
 )
@@ -29,12 +29,12 @@ st.markdown("""
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #0F1420; border-radius: 10px; border: 1px solid #1E293B; margin-bottom: 20px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                MOVIE TIME STUDIO PRO - ULTIMATE STABLE DUBBING
+                MOVIE TIME STUDIO PRO - TRANSLATE LIBRARY DUBBING
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង និងបកប្រែជាភាសាខ្មែរយ៉ាងរលូនដោយ Googletrans</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង និងបកប្រែជាភាសាខ្មែរដោយไลប្រារី Translate ដែលមានស្ថេរភាពខ្ពស់</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Active Stable</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Translate Lib Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -53,8 +53,8 @@ with col_left:
         st.info("📌 សូម Upload វីដេអូប្រភេទ MP4 ដើម្បីចាប់ផ្តើម។")
 
     st.markdown("---")
-    st.markdown("### 💡 ព័ត៌មានជំនួយ៖")
-    st.info("ប្រព័ន្ធនេះត្រូវបានកែសម្រួលដើម្បីគាំទ្រកូដភាសាខ្មែរ (`dest='km'`) យ៉ាងត្រឹមត្រូវ ១០០% ដោយគ្មាន Error ឡើងក្រហមទៀតឡើយ។")
+    st.markdown("### 💡 ព័ត៌មានប្រព័ន្ធ៖")
+    st.info("ប្រើប្រាស់ไลប្រារី `translate` ដែលមានភាពរលូន និងមិនសូវជួបបញ្ហា IP Block លើ Streamlit Cloud។")
 
 with col_center:
     st.markdown("### 📝 តារាងគ្រប់គ្រងថិរវេលា និងអត្ថបទបកប្រែខ្មែរ")
@@ -63,7 +63,7 @@ with col_center:
         st.session_state.auto_subtitles = []
 
     # 1. Extract & Translate Button
-    if st.button("🪄 ១. ទាញយក និងបកប្រែជាភាសាខ្មែរ ១០០%"):
+    if st.button("🪄 ១. ទាញយក និងបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -93,7 +93,7 @@ with col_center:
                 status_text.text("⏳ កំពុងបកប្រែអត្ថបទទាំងអស់ជាភាសាខ្មែរ...")
                 progress_bar.progress(80)
                 
-                translator = Translator()
+                translator = Translator(to_lang="km")
                 st.session_state.auto_subtitles = []
                 
                 for segment in result["segments"]:
@@ -105,9 +105,9 @@ with col_center:
                     khmer_text = original_text
                     if original_text:
                         try:
-                            translated = translator.translate(original_text, dest='km')
-                            if translated and translated.text:
-                                khmer_text = translated.text
+                            translated = translator.translate(original_text)
+                            if translated:
+                                khmer_text = translated
                         except Exception:
                             pass
                             
@@ -131,14 +131,14 @@ with col_center:
     # 2. Force Translate Button
     if st.session_state.auto_subtitles:
         if st.button("🌐 ២. បកប្រែអត្ថបទទាំងអស់ជាខ្មែរបន្ថែម (Force Translate)"):
-            translator = Translator()
+            translator = Translator(to_lang="km")
             for idx, sub in enumerate(st.session_state.auto_subtitles):
                 current_text = sub["khmer"].strip()
                 if current_text:
                     try:
-                        translated = translator.translate(current_text, dest='km')
-                        if translated and translated.text:
-                            st.session_state.auto_subtitles[idx]["khmer"] = translated.text
+                        translated = translator.translate(current_text)
+                        if translated:
+                            st.session_state.auto_subtitles[idx]["khmer"] = translated
                     except Exception:
                         pass
             st.success("✅ បានបកប្រែអត្ថបទជាខ្មែរជោគជ័យ!")
@@ -252,11 +252,10 @@ with col_center:
                         st.download_button(
                             label="📥 ទាញយកវីដេអូចុងក្រោយ (.MP4)",
                             data=file,
-                            file_name="khmer_final_dubbed.mp4",
+                            file_name="translate_lib_dubbed.mp4",
                             mime="video/mp4"
                         )
                 except Exception as e:
                     st.error(f"❌ កើតកំហុសក្នុងដំណើរការ Render: {e}")
     else:
         st.info("👆 សូម Upload វីដេអូ និងចុចប៊ូតុងទី ១ ដើម្បីចាប់ផ្តើម។")
-                            
