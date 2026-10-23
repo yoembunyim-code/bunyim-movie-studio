@@ -3,7 +3,7 @@ import os
 import subprocess
 import tempfile
 import whisper
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 
 # Set page configuration
 st.set_page_config(
@@ -29,12 +29,12 @@ st.markdown("""
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #0F1420; border-radius: 10px; border: 1px solid #1E293B; margin-bottom: 20px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                MOVIE TIME STUDIO PRO - KHMER UNICODE DUBBING PRO
+                MOVIE TIME STUDIO PRO - AUTO KHMER TRANSLATE & DUBBING
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង និងបកប្រែជាអក្សរខ្មែរ Unicode ពិតប្រាកដ ១០០%</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង និងបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ (Whisper + Deep Translator)</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Khmer Unicode Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Stable AI Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -54,15 +54,15 @@ with col_left:
 
     st.markdown("---")
     st.markdown("### 🤖 ប្រព័ន្ធ AI ស្វ័យប្រវត្តិ៖")
-    st.info("ប្រព័ន្ធจะบังคับ (Force) ឱ្យបកប្រែចេញមកជា **អក្សរខ្មែរ Unicode** ត្រឹមត្រូវល្អសម្រាប់យកไป Render ជាសំឡេង Edge-TTS។")
+    st.info("ប្រព័ន្ធនឹងទាញយកឃ្លានិយាយពីវីដេអូ និងបកប្រែផ្ទាល់ជា **ភាសាខ្មែរ** ដោយប្រើប្រាស់ Deep Translator យ៉ាងរលូន។")
 
 with col_center:
-    st.markdown("### 📝 តារាងអត្ថបទបកប្រែជាអក្សរខ្មែរ Unicode")
+    st.markdown("### 📝 តារាងអត្ថបទបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ")
     
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
-    if st.button("🪄 ចាប់ផ្តើមទាញ និងបកប្រែជាអក្សរខ្មែរ Unicode ១០០%"):
+    if st.button("🪄 ចាប់ផ្តើមទាញ និងបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -91,10 +91,10 @@ with col_center:
                 
                 st.session_state.auto_subtitles = []
                 
-                status_text.text("⏳ កំពុងបកប្រែអត្ថបទទាំងអស់ទៅជាអក្សរខ្មែរ Unicode...")
+                status_text.text("⏳ កំពុងបកប្រែអត្ថបទទាំងអស់ទៅជាភាសាខ្មែរ...")
                 progress_bar.progress(75)
                 
-                translator = Translator()
+                translator = GoogleTranslator(source='auto', target='km')
                 
                 for segment in result["segments"]:
                     start_time = segment["start"]
@@ -104,9 +104,9 @@ with col_center:
                     
                     khmer_text = original_text
                     try:
-                        translation = translator.translate(original_text, dest='km')
-                        if translation and translation.text:
-                            khmer_text = translation.text
+                        translation = translator.translate(original_text)
+                        if translation:
+                            khmer_text = translation
                     except Exception:
                         pass
                         
@@ -118,8 +118,8 @@ with col_center:
                     })
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 ទាញយក និងបកប្រែជាអក្សរខ្មែរ Unicode ជោគជ័យ ១០០%!")
-                st.success("✅ អត្ថបទត្រូវបានបកប្រែជាអក្សរខ្មែរ Unicode ត្រឹមត្រូវរួចរាល់!")
+                status_text.text("🎉 ទាញយក និងបកប្រែជាភាសាខ្មែរជោគជ័យ ១០០%!")
+                st.success("✅ អត្ថបទត្រូវបានបកប្រែជាខ្មែរដោយស្វ័យប្រវត្តិរួចរាល់!")
                 st.rerun()
                 
             except Exception as e:
@@ -235,10 +235,10 @@ with col_center:
                         st.download_button(
                             label="📥 ទាញយកវីដេអូចុងក្រោយ (.MP4)",
                             data=file,
-                            file_name="khmer_unicode_dubbed.mp4",
+                            file_name="khmer_dubbed_movie_pro.mp4",
                             mime="video/mp4"
                         )
                 except Exception as e:
                     st.error(f"❌ កើតកំហុសក្នុងដំណើរការ Render: {e}")
     else:
-        st.info("👆 សូមចុចប៊ូតុង **'🪄 ចាប់ផ្តើមទាញ និងបកប្រែជាអក្សរខ្មែរ Unicode ១០០%'** ខាងលើដើម្បីឱ្យប្រព័ន្ធដំណើរការ។")
+        st.info("👆 សូមចុចប៊ូតុង **'🪄 ចាប់ផ្តើមទាញ និងបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ'** ខាងលើដើម្បីឱ្យប្រព័ន្ធដំណើរការ។")
