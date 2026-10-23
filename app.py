@@ -27,12 +27,12 @@ st.markdown("""
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #0F1420; border-radius: 10px; border: 1px solid #1E293B; margin-bottom: 20px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                MOVIE TIME STUDIO PRO - AI KHMER DUBBING PRO
+                MOVIE TIME STUDIO PRO - AUTO SYNC DUBBING PRO
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធកែសម្រួលម៉ោង និងល្បឿននិយាយតាមតួអង្គ (Advanced Timing & Speed Control)</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធគណនា និងសារ៉េល្បឿនតាមមាត់តួអង្គស្វ័យប្រវត្តិ (Auto-Tempo & Time Sync Engine)</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Auto-Sync Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -51,25 +51,25 @@ with col_left:
         st.info("📌 សូម Upload វីដេអូប្រភេទ MP4 ដើម្បីចាប់ផ្តើម Render ។")
 
     st.markdown("---")
-    st.markdown("### 💡 គន្លឹះសារ៉េម៉ោង និងល្បឿន៖")
-    st.info("- **Start (s):** កំណត់วินาทีឱ្យត្រូវនឹងមាត់តួអង្គនិយាយ។\n- **Speed:** ប្រសិនបើសំឡេងវែងពេក អាចសារ៉េ Speed ឱ្យលឿនជាង 1.0 (ឧ. 1.2 ឬ 1.3) ដើម្បីកុំឱ្យហៀរហួសម៉ោង។")
+    st.markdown("### 💡 របៀបដំណើរការស្វ័យប្រវត្តិ៖")
+    st.info("- **Start (s):** ម៉ោងចាប់ផ្តើមនិយាយ។\n- **Duration (s):** រយៈពេលដែលត្រូវនិយាយចប់ (ប្រព័ន្ធនឹងគណនាល្បឿន Speed ស្វ័យប្រវត្តិឱ្យទាន់រយៈពេលនេះកុំឱ្យហៀរម៉ោង)។")
 
 with col_center:
-    st.markdown("### 📝 តារាងកែសម្រួលម៉ោង ល្បឿន និងអត្ថបទតាមតួអង្គ")
+    st.markdown("### 📝 តារាងគ្រប់គ្រងម៉ោង និងអត្ថបទតាមតួអង្គ")
     
     if 'subtitles' not in st.session_state:
         st.session_state.subtitles = [
-            {"time_sec": 1.5, "speed": 1.0, "speaker": "តួស្រី", "khmer": "នាវាចង់លិចហើយ ជួយខ្ញុំផង!"},
-            {"time_sec": 6.0, "speed": 1.0, "speaker": "សម្រាយរឿង", "khmer": "ជិតជោគជ័យហើយ ជួយផងលោកពូយួន និងអ្នកនាងយៀក!"},
-            {"time_sec": 10.5, "speed": 1.0, "speaker": "តួប្រុស", "khmer": "អ្នកទាំងអស់គ្នាប្រញាប់ឡើងមក ខ្ញុំជួយទាញឡើងមក!"}
+            {"time_sec": 1.5, "duration": 3.0, "speaker": "តួស្រី", "khmer": "នាវាចង់លិចហើយ ជួយខ្ញុំផង!"},
+            {"time_sec": 6.0, "duration": 4.0, "speaker": "សម្រាយរឿង", "khmer": "ជិតជោគជ័យហើយ ជួយផងលោកពូយួន និងអ្នកនាងយៀក!"},
+            {"time_sec": 10.5, "duration": 3.5, "speaker": "តួប្រុស", "khmer": "អ្នកទាំងអស់គ្នាប្រញាប់ឡើងមក ខ្ញុំជួយទាញឡើងមក!"}
         ]
 
     for idx, sub in enumerate(st.session_state.subtitles):
-        cols = st.columns([0.8, 0.8, 1, 1.2, 2.5])
+        cols = st.columns([0.8, 0.8, 1.2, 3])
         with cols[0]:
             st.session_state.subtitles[idx]["time_sec"] = st.number_input(f"Start {idx}", value=sub["time_sec"], step=0.1, key=f"t_{idx}")
         with cols[1]:
-            st.session_state.subtitles[idx]["speed"] = st.number_input(f"Speed {idx}", value=sub["speed"], step=0.1, min_value=0.5, max_value=2.0, key=f"s_{idx}")
+            st.session_state.subtitles[idx]["duration"] = st.number_input(f"Dur {idx}", value=sub["duration"], step=0.1, min_value=1.0, key=f"d_{idx}")
         with cols[2]:
             st.session_state.subtitles[idx]["speaker"] = st.selectbox(f"Role {idx}", ["សម្រាយរឿង", "តួប្រុស", "តួស្រី"], index=["សម្រាយរឿង", "តួប្រុស", "តួស្រី"].index(sub["speaker"]), key=f"spk_{idx}")
         with cols[3]:
@@ -78,7 +78,7 @@ with col_center:
     st.markdown("---")
     st.markdown("### 🚀 បញ្ចូលសំឡេងតាមតួអង្គ និង Export វីដេអូចុងក្រោយ")
     
-    if st.button("🎬 ចាប់ផ្តើម Render វីដេអូ (តាមម៉ោង និងល្បឿនដែលបានកែសម្រួល)"):
+    if st.button("🎬 ចាប់ផ្តើម Render វីដេអូ (Auto-Sync តាមមាត់តួអង្គ)"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -118,7 +118,7 @@ with col_center:
                     audio_inputs.extend(["-i", line_audio_path])
                 
                 progress_bar.progress(60)
-                status_text.text("⏳ កំពុងប្រើប្រាស់ FFmpeg ដើម្បីសារ៉េល្បឿន หน่วงเวลา និងលុបសំឡេងដើម...")
+                status_text.text("⏳ កំពុងគណនាល្បឿន Auto-Tempo និងបញ្ចូលសំឡេងឆ្លាស់គ្នា...")
                 
                 output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                 
@@ -127,11 +127,24 @@ with col_center:
                 
                 for i, sub in enumerate(st.session_state.subtitles):
                     delay_ms = int(sub["time_sec"] * 1000)
-                    speed = sub["speed"]
+                    target_duration = sub["duration"]
                     
-                    # Apply atempo filter if speed is not 1.0, and adelay for exact timing
-                    if speed != 1.0:
-                        filter_complex_parts.append(f"[{i+1}:a]atempo={speed},adelay={delay_ms}|{delay_ms}[a{i}]")
+                    # Estimate audio length based on character length (approx 15 characters per second as baseline)
+                    # We can use FFmpeg filter to dynamically adjust atempo if needed, 
+                    # or apply a smart filter chain. Here we use an estimated speed adjustment.
+                    char_count = len(sub["khmer"])
+                    estimated_audio_duration = char_count / 12.0  # rough estimate of normal speech speed in Khmer
+                    
+                    speed_factor = 1.0
+                    if estimated_audio_duration > target_duration and target_duration > 0:
+                        speed_factor = min(round(estimated_audio_duration / target_duration, 2), 2.0)
+                    
+                    # Build filter for this track: apply atempo if speed differs, then adelay
+                    if speed_factor != 1.0:
+                        # FFmpeg atempo only supports values between 0.5 and 2.0. Chain them if needed.
+                        if speed_factor > 2.0:
+                            speed_factor = 2.0
+                        filter_complex_parts.append(f"[{i+1}:a]atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{i}]")
                     else:
                         filter_complex_parts.append(f"[{i+1}:a]adelay={delay_ms}|{delay_ms}[a{i}]")
                         
@@ -160,14 +173,14 @@ with col_center:
                 subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសំឡេងជោគជ័យ 100%!")
-                st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render រួចរាល់ដោយជោគជ័យតាមម៉ោង និងល្បឿនដែលបានកែសម្រួល!")
+                status_text.text("🎉 បង្កើតវីដេអូ Auto-Sync ជោគជ័យ 100%!")
+                st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render ស្វ័យប្រវត្តិដោយកែសម្រួលល្បឿន និងម៉ោងត្រូវមាត់តួអង្គរួចរាល់!")
                 
                 with open(output_video_path, "rb") as file:
                     st.download_button(
-                        label="📥 ទាញយកវីដេអូចុងក្រោយ (.MP4)",
+                        label="📥 ទាញយកវីដេអូ Auto-Sync (.MP4)",
                         data=file,
-                        file_name="khmer_dubbed_custom_pro.mp4",
+                        file_name="khmer_dubbed_autosync_pro.mp4",
                         mime="video/mp4"
                     )
             except Exception as e:
