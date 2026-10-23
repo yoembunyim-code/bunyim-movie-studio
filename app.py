@@ -3,7 +3,7 @@ import os
 import subprocess
 import tempfile
 import whisper
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 
 # Set page configuration
 st.set_page_config(
@@ -31,10 +31,10 @@ st.markdown("""
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                 MOVIE TIME STUDIO PRO - AI AUTO TRANSLATE & DUBBING
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង បកប្រែ និងបញ្ចូលសម្លេងខ្មែរស្វ័យប្រវត្តិ (Whisper + Google Translate + Edge-TTS)</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង បកប្រែ និងបញ្ចូលសម្លេងខ្មែរស្វ័យប្រវត្តិ (Whisper + Deep Translator + Edge-TTS)</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Auto-AI Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Stable AI Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -54,7 +54,7 @@ with col_left:
 
     st.markdown("---")
     st.markdown("### 🤖 ប្រព័ន្ធ AI ស្វ័យប្រវត្តិ៖")
-    st.info("មុខងារថ្មីនេះនឹងធ្វើការ៖\n1. ទាញយកសម្លេងពីវីដេអូដោយស្វ័យប្រវត្តិ។\n2. ប្រើប្រាស់ **Whisper AI** ដើម្បីចាប់យកឃ្លានិយាយ។\n3. បកប្រែជាភាសាខ្មែរដោយ **Google Translate** ភ្លាមៗ។")
+    st.info("មុខងារថ្មីនេះនឹងធ្វើការ៖\n1. ទាញយកសម្លេងពីវីដេអូដោយស្វ័យប្រវត្តិ។\n2. ប្រើប្រាស់ **Whisper AI** ដើម្បីចាប់យកឃ្លានិយាយ។\n3. បកប្រែជាភាសាខ្មែរដោយ **Deep Translator** យ៉ាងរលូន។")
 
 with col_center:
     st.markdown("### 📝 តារាងអត្ថបទបកប្រែស្វ័យប្រវត្តិ (Auto-Generated Script)")
@@ -62,7 +62,6 @@ with col_center:
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
-    # Button to trigger AI Auto Transcription & Translation
     if st.button("🪄 ចាប់ផ្តើមទាញ និងបកប្រែអត្ថបទតាមវីដេអូស្វ័យប្រវត្តិ"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
@@ -77,25 +76,25 @@ with col_center:
                 input_video_path = tfile.name
                 tfile.close()
                 
-                status_text.text("⏳ កំពុងទាញយកសម្លេងចេញពីវីដេអូ (Extracting Audio)...")
+                status_text.text("⏳ កំពុងទាញយកសម្លេងចេញពីវីដេអូ...")
                 progress_bar.progress(30)
                 
                 audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                 extract_cmd = ["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path]
                 subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
-                status_text.text("⏳ កំពុងដំណើរការ Whisper AI ដើម្បីស្គាល់សម្លេងនិយាយ (Transcribing)...")
+                status_text.text("⏳ កំពុងដំណើរការ Whisper AI ដើម្បីស្គាល់សម្លេងនិយាយ...")
                 progress_bar.progress(60)
                 
-                # Load tiny or base whisper model for fast cloud processing
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
                 
-                translator = Translator()
                 st.session_state.auto_subtitles = []
                 
-                status_text.text("⏳ កំពុងបកប្រែអត្ថបទទៅជាភាសាខ្មែរ (Translating to Khmer)...")
+                status_text.text("⏳ កំពុងបកប្រែអត្ថបទទៅជាភាសាខ្មែរ...")
                 progress_bar.progress(85)
+                
+                translator = GoogleTranslator(source='auto', target='km')
                 
                 for segment in result["segments"]:
                     start_time = segment["start"]
@@ -103,13 +102,12 @@ with col_center:
                     duration = end_time - start_time
                     original_text = segment["text"]
                     
-                    # Translate to Khmer
                     try:
-                        translated = translator.translate(original_text, dest='km')
-                        khmer_text = translated.text
+                        khmer_text = translator.translate(original_text)
+                        if not khmer_text:
+                            khmer_text = original_text
                     except:
-                        translated = translator.translate(original_text, dest='en')
-                        khmer_text = translated.text # Fallback
+                        khmer_text = original_text
                         
                     st.session_state.auto_subtitles.append({
                         "time_sec": round(start_time, 2),
@@ -120,7 +118,7 @@ with col_center:
                 
                 progress_bar.progress(100)
                 status_text.text("🎉 ទាញយក និងបកប្រែអត្ថបទស្វ័យប្រវត្តិជោគជ័យ 100%!")
-                st.success("✅ អត្ថបទត្រូវបានទាញយក និងបកប្រែរួចរាល់! អ្នកអាចពិនិត្យមើលក្នុងតារាងខាងក្រោម។")
+                st.success("✅ អត្ថបទត្រូវបានទាញយក និងបកប្រែរួចរាល់!")
                 st.rerun()
                 
             except Exception as e:
@@ -128,7 +126,6 @@ with col_center:
         else:
             st.warning("⚠️ សូមทำการ Upload វីដេអូនៅផ្នែកខាងឆ្វេងជាមុនសិន!")
 
-    # Display dynamic table of auto-generated subtitles
     if st.session_state.auto_subtitles:
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             cols = st.columns([0.8, 0.8, 1.2, 3])
