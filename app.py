@@ -27,12 +27,12 @@ st.markdown("""
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #0F1420; border-radius: 10px; border: 1px solid #1E293B; margin-bottom: 20px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                MOVIE TIME STUDIO PRO - AI KHMER DUBBING
+                MOVIE TIME STUDIO PRO - AI KHMER DUBBING PRO
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធស្វ័យប្រវត្តិបកប្រែវីដេអូ និងបញ្ចូលសំឡេងខ្មែរ AI (Edge-TTS & FFmpeg Pro)</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធបែងចែកសំឡេងតាមតួអង្គប្រុស ស្រី និងលុបសំឡេងដើមចេញ ១០០% (Multi-Voice & FFmpeg)</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Edge-TTS & FFmpeg Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Multi-Voice Engine Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -42,7 +42,7 @@ col_left, col_center = st.columns([1.2, 1.8])
 
 with col_left:
     st.markdown("### 📺 ផ្ទាំងមើលវីដេអូ (Video Preview)")
-    uploaded_file = st.file_uploader("ទម្លាក់វីដេអូរឿង ឬ Audio នៅទីនេះ (Drop File)", type=["mp4", "mkv", "mov"])
+    uploaded_file = st.file_uploader("ទម្លាក់វីដេអូរឿងនៅទីนี่ (Drop MP4 File)", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
         st.video(uploaded_file)
@@ -51,44 +51,41 @@ with col_left:
         st.info("📌 សូម Upload វីដេអូប្រភេទ MP4 ដើម្បីចាប់ផ្តើម Render ។")
 
     st.markdown("---")
-    st.markdown("### 🎛️ ការកំណត់សំឡេង AI (Voice Engine)")
-    voice_choice = st.selectbox(
-        "🎙️ រើសសំឡេង AI (Voice)", 
-        ["km-KH-SreymomNeural (ស្រី - ធម្មជាតិ)", "km-KH-PisethNeural (ប្រុស - រឹងមាំ)"]
-    )
-    speed_rate = st.slider("ល្បឿននិយាយ (Speed)", 0.5, 2.0, 1.0, 0.05)
-    orig_audio_vol = st.slider("កម្រិតសំឡេងដើមវីដេអូ (Original Audio Ducking %)", 0, 100, 15)
+    st.markdown("### 🎛️ ការកំណត់សំឡេងតួអង្គ (Voice Mapping)")
+    st.info("💡 ប្រព័ន្ធនឹងជ្រើសរើសសំឡេង AI ស្វ័យប្រវត្តិទៅតាមតួអង្គដែលបានកំណត់ក្នុងតារាងខាងស្តាំ៖\n- **តួប្រុស:** km-KH-PisethNeural\n- **តួស្រី:** km-KH-SreymomNeural\n- **សម្រាយរឿង:** km-KH-SreymomNeural")
 
 with col_center:
-    st.markdown("### 📝 តារាងកែសម្រួលអត្ថបទសន្ទនា និងបកប្រែខ្មែរ (Subtitle Script)")
+    st.markdown("### 📝 តារាងកែសម្រួលអត្ថបទសន្ទនា និងបកប្រែខ្មែរតាមតួអង្គ (Subtitle Script)")
     
     if 'subtitles' not in st.session_state:
         st.session_state.subtitles = [
-            {"time": "00:01 - 00:04", "speaker": "សម្រាយរឿង", "khmer": "ជិតជោគជ័យហើយ ជួយផងលោកពូយួន និងអ្នកនាងយៀក!"},
-            {"time": "00:05 - 00:09", "speaker": "តួប្រុស", "khmer": "អ្នកទាំងអស់គ្នាប្រញាប់ឡើងមក ខ្ញុំជួយទាញឡើងមក លោកម្ចាស់ឆេង!"},
-            {"time": "00:10 - 00:15", "speaker": "តួស្រី", "khmer": "បើកូនស្រីឡើងទៅលើបាន អ្នកត្រូវតែតោងឱ្យជាប់ ខ្សែពួរជិតដាច់ហើយ!"}
+            {"time_sec": 1, "duration": 3, "speaker": "សម្រាយរឿង", "khmer": "ជិតជោគជ័យហើយ ជួយផងលោកពូយួន និងអ្នកនាងយៀក!"},
+            {"time_sec": 5, "duration": 4, "speaker": "តួប្រុស", "khmer": "អ្នកទាំងអស់គ្នាប្រញាប់ឡើងមក ខ្ញុំជួយទាញឡើងមក លោកម្ចាស់ឆេង!"},
+            {"time_sec": 10, "duration": 5, "speaker": "តួស្រី", "khmer": "បើកូនស្រីឡើងទៅលើបាន អ្នកត្រូវតែតោងឱ្យជាប់ ខ្សែពួរជិតដាច់ហើយ!"}
         ]
 
     for idx, sub in enumerate(st.session_state.subtitles):
-        cols = st.columns([1, 1.2, 3])
+        cols = st.columns([1, 1, 1.2, 3])
         with cols[0]:
-            st.text(sub["time"])
+            st.session_state.subtitles[idx]["time_sec"] = st.number_input(f"Start (s) {idx}", value=sub["time_sec"], key=f"t_{idx}")
         with cols[1]:
-            st.session_state.subtitles[idx]["speaker"] = st.selectbox(f"Role {idx}", ["សម្រាយរឿង", "តួប្រុស", "តួស្រី"], index=["សម្រាយរឿង", "តួប្រុស", "តួស្រី"].index(sub["speaker"]), key=f"spk_{idx}")
+            st.session_state.subtitles[idx]["duration"] = st.number_input(f"Dur (s) {idx}", value=sub["duration"], key=f"d_{idx}")
         with cols[2]:
+            st.session_state.subtitles[idx]["speaker"] = st.selectbox(f"Role {idx}", ["សម្រាយរឿង", "តួប្រុស", "តួស្រី"], index=["សម្រាយរឿង", "តួប្រុស", "តួស្រី"].index(sub["speaker"]), key=f"spk_{idx}")
+        with cols[3]:
             st.session_state.subtitles[idx]["khmer"] = st.text_area(f"Khmer {idx}", sub["khmer"], key=f"kh_{idx}", height=60)
 
     st.markdown("---")
-    st.markdown("### 🚀 បញ្ចូលសំឡេង និង Export វីដេអូចុងក្រោយ")
+    st.markdown("### 🚀 បញ្ចូលសំឡេងតាមតួអង្គ និង Export វីដេអូចុងក្រោយ")
     
-    if st.button("🎬 ចាប់ផ្តើម Render និង Export វីដេអូ MP4 ជាមួយសំឡេង AI ខ្មែរ"):
+    if st.button("🎬 ចាប់ផ្តើម Render វីដេអូ (លុបសំឡេងដើម + ใส่សំឡេងតាមតួអង្គ)"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
             status_text = st.empty()
             
             try:
                 status_text.text("⏳ កំពុងត្រៀមទិន្នន័យវីដេអូ...")
-                progress_bar.progress(20)
+                progress_bar.progress(10)
                 
                 # Save uploaded video to temp file
                 tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
@@ -96,56 +93,82 @@ with col_center:
                 input_video_path = tfile.name
                 tfile.close()
                 
-                # Combine all Khmer texts into one script for TTS synthesis
-                full_khmer_text = " ".join([sub["khmer"] for sub in st.session_state.subtitles])
+                audio_inputs = []
+                temp_audio_files = []
                 
-                status_text.text("⏳ កំពុងបង្កើតសំឡេង AI ភាសាខ្មែរ (Edge-TTS)...")
-                progress_bar.progress(50)
+                # Generate individual audio for each line based on character voice
+                for i, sub in enumerate(st.session_state.subtitles):
+                    status_text.text(f"⏳ กำลังสร้างเสียง AI สำหรับประโยคที่ {i+1} ({sub['speaker']})...")
+                    
+                    # Map speaker to appropriate Edge-TTS voice
+                    if sub["speaker"] == "តួប្រុស":
+                        voice = "km-KH-PisethNeural"
+                    else:
+                        voice = "km-KH-SreymomNeural" # ស្រី និង សម្រាយរឿង
+                        
+                    line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                    temp_audio_files.append(line_audio_path)
+                    
+                    # Run edge-tts for this specific line
+                    edge_cmd = [
+                        "edge-tts",
+                        "--text", sub["khmer"],
+                        "--voice", voice,
+                        "--write-media", line_audio_path
+                    ]
+                    subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    
+                    # Prepare filter complex with exact delay (adelay in milliseconds)
+                    delay_ms = int(sub["time_sec"] * 1000)
+                    audio_inputs.extend(["-i", line_audio_path])
                 
-                # Select voice mapping
-                selected_voice = "km-KH-SreymomNeural" if "ស្រី" in voice_choice else "km-KH-PisethNeural"
-                tts_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                
-                # Use edge-tts command line via subprocess (Reliable & No Event Loop Error)
-                edge_cmd = [
-                    "edge-tts",
-                    "--text", full_khmer_text,
-                    "--voice", selected_voice,
-                    "--write-media", tts_audio_path
-                ]
-                subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                
-                status_text.text("⏳ កំពុងប្រើប្រាស់ FFmpeg ដើម្បីបញ្ចូលសំឡេង AI ខ្មែរ និងវីដេអូ...")
-                progress_bar.progress(80)
+                progress_bar.progress(60)
+                status_text.text("⏳ កំពុងប្រើប្រាស់ FFmpeg ដើម្បីលុបសំឡេងដើម និងផ្គុំសំឡេងតាមពេលវេលាតួអង្គ...")
                 
                 output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-                vol_scale = orig_audio_vol / 100.0
                 
-                # FFmpeg command to mix original video audio (ducked) with generated Khmer AI voice
+                # Build FFmpeg filter complex to delay each audio track and mix them together
+                # -an completely removes original video audio
+                filter_complex_parts = []
+                mix_inputs = []
+                
+                for i in range(len(st.session_state.subtitles)):
+                    delay_ms = int(st.session_state.subtitles[i]["time_sec"] * 1000)
+                    filter_complex_parts.append(f"[{i}:a]adelay={delay_ms}|{delay_ms}[a{i}]")
+                    mix_inputs.append(f"[a{i}]")
+                
+                num_tracks = len(st.session_state.subtitles)
+                mix_filter = "".join(mix_inputs) + f"amix=inputs={num_tracks}:duration=longest[aout]"
+                filter_complex_parts.append(mix_filter)
+                
+                full_filter_str = ";".join(filter_complex_parts)
+                
                 ffmpeg_cmd = [
                     "ffmpeg", "-y",
-                    "-i", input_video_path,
-                    "-i", tts_audio_path,
-                    "-filter_complex", f"[0:a]volume={vol_scale}[a0];[1:a]volume=1.0[a1];[a0][a1]amix=inputs=2:duration=first[aout]",
+                    "-i", input_video_path
+                ]
+                ffmpeg_cmd.extend(audio_inputs)
+                ffmpeg_cmd.extend([
+                    "-filter_complex", full_filter_str,
                     "-map", "0:v",
                     "-map", "[aout]",
                     "-c:v", "copy",
                     "-c:a", "aac",
                     output_video_path
-                ]
+                ])
                 
                 subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសំឡេងខ្មែរ AI ជោគជ័យ 100%!")
-                st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render ជាមួយសំឡេងខ្មែរ AI និង FFmpeg រួចរាល់ដោយជោគជ័យ!")
+                status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសំឡេងតាមតួអង្គជោគជ័យ 100%!")
+                st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render ដោយលុបសំឡេងដើម និងបែងចែកសំឡេងតាមតួអង្គប្រុសស្រីរួចរាល់!")
                 
                 # Download button
                 with open(output_video_path, "rb") as file:
                     st.download_button(
-                        label="📥 ទាញយកវីដេអូបញ្ចូលសំឡេងខ្មែរ AI (.MP4)",
+                        label="📥 ទាញយកវីដេអូបញ្ចូលសំឡេងតាមតួអង្គ (.MP4)",
                         data=file,
-                        file_name="khmer_dubbed_video_pro.mp4",
+                        file_name="khmer_dubbed_character_pro.mp4",
                         mime="video/mp4"
                     )
             except Exception as e:
