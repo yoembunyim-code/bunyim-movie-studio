@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 import subprocess
-import asyncio
 import tempfile
 
 # Set page configuration
@@ -30,10 +29,10 @@ st.markdown("""
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                 MOVIE TIME STUDIO PRO - AI KHMER DUBBING
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធស្វ័យប្រវត្តិបកប្រែវីដេអូ និងបញ្ចូលសំឡេងរឿងភាគ (AI Auto Khmer Dubbing Engine v4.5)</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធស្វ័យប្រវត្តិបកប្រែវីដេអូ និងបញ្ចូលសំឡេងខ្មែរ AI (Edge-TTS & FFmpeg Pro)</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● FFmpeg & Edge-TTS Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Edge-TTS & FFmpeg Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -53,7 +52,10 @@ with col_left:
 
     st.markdown("---")
     st.markdown("### 🎛️ ការកំណត់សំឡេង AI (Voice Engine)")
-    voice_choice = st.selectbox("🎙️ រើសសំឡេង AI (Voice)", ["km-KH-PisethNeural (ប្រុស)", "km-KH-SreymomNeural (ស្រី)"])
+    voice_choice = st.selectbox(
+        "🎙️ រើសសំឡេង AI (Voice)", 
+        ["km-KH-SreymomNeural (ស្រី - ធម្មជាតិ)", "km-KH-PisethNeural (ប្រុស - រឹងមាំ)"]
+    )
     speed_rate = st.slider("ល្បឿននិយាយ (Speed)", 0.5, 2.0, 1.0, 0.05)
     orig_audio_vol = st.slider("កម្រិតសំឡេងដើមវីដេអូ (Original Audio Ducking %)", 0, 100, 15)
 
@@ -79,45 +81,69 @@ with col_center:
     st.markdown("---")
     st.markdown("### 🚀 បញ្ចូលសំឡេង និង Export វីដេអូចុងក្រោយ")
     
-    if st.button("🎬 ចាប់ផ្តើម Render និង Export វីដេអូ MP4 ពិតប្រាកដ"):
+    if st.button("🎬 ចាប់ផ្តើម Render និង Export វីដេអូ MP4 ជាមួយសំឡេង AI ខ្មែរ"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
             status_text = st.empty()
             
             try:
-                status_text.text("⏳ កំពុងត្រៀមបង្កើតថតទិន្នន័យបណ្តោះអាសន្ន...")
+                status_text.text("⏳ កំពុងត្រៀមទិន្នន័យវីដេអូ...")
                 progress_bar.progress(20)
                 
-                # Save uploaded video to a temp file
+                # Save uploaded video to temp file
                 tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
                 tfile.write(uploaded_file.read())
                 input_video_path = tfile.name
                 tfile.close()
                 
-                status_text.text("⏳ កំពុងដំណើរការ FFmpeg ដើម្បីรวม (Mux) សំឡេង និងវីដេអូ...")
-                progress_bar.progress(60)
+                # Combine all Khmer texts into one script for TTS synthesis
+                full_khmer_text = " ".join([sub["khmer"] for sub in st.session_state.subtitles])
+                
+                status_text.text("⏳ កំពុងបង្កើតសំឡេង AI ភាសាខ្មែរ (Edge-TTS)...")
+                progress_bar.progress(50)
+                
+                # Select voice mapping
+                selected_voice = "km-KH-SreymomNeural" if "ស្រី" in voice_choice else "km-KH-PisethNeural"
+                tts_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                
+                # Use edge-tts command line via subprocess (Reliable & No Event Loop Error)
+                edge_cmd = [
+                    "edge-tts",
+                    "--text", full_khmer_text,
+                    "--voice", selected_voice,
+                    "--write-media", tts_audio_path
+                ]
+                subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                status_text.text("⏳ កំពុងប្រើប្រាស់ FFmpeg ដើម្បីបញ្ចូលសំឡេង AI ខ្មែរ និងវីដេអូ...")
+                progress_bar.progress(80)
                 
                 output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-                
-                # FFmpeg command to process video and adjust volume ducking
-                # This ensures a valid MP4 output file is generated
                 vol_scale = orig_audio_vol / 100.0
+                
+                # FFmpeg command to mix original video audio (ducked) with generated Khmer AI voice
                 ffmpeg_cmd = [
-                    "ffmpeg", "-y", "-i", input_video_path,
-                    "-af", f"volume={vol_scale}",
-                    "-c:v", "copy", "-c:a", "aac", output_video_path
+                    "ffmpeg", "-y",
+                    "-i", input_video_path,
+                    "-i", tts_audio_path,
+                    "-filter_complex", f"[0:a]volume={vol_scale}[a0];[1:a]volume=1.0[a1];[a0][a1]amix=inputs=2:duration=first[aout]",
+                    "-map", "0:v",
+                    "-map", "[aout]",
+                    "-c:v", "copy",
+                    "-c:a", "aac",
+                    output_video_path
                 ]
                 
                 subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសំឡេងខ្មែរជោគជ័យ 100%!")
-                st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render រួចរាល់ដោយជោគជ័យតាមរយៈ FFmpeg Backend!")
+                status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសំឡេងខ្មែរ AI ជោគជ័យ 100%!")
+                st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render ជាមួយសំឡេងខ្មែរ AI និង FFmpeg រួចរាល់ដោយជោគជ័យ!")
                 
-                # Provide real file download
+                # Download button
                 with open(output_video_path, "rb") as file:
                     st.download_button(
-                        label="📥 ទាញយកវីដេអូបញ្ចូលសំឡេងខ្មែរ (.MP4)",
+                        label="📥 ទាញយកវីដេអូបញ្ចូលសំឡេងខ្មែរ AI (.MP4)",
                         data=file,
                         file_name="khmer_dubbed_video_pro.mp4",
                         mime="video/mp4"
