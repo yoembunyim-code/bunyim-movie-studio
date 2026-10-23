@@ -53,15 +53,14 @@ with col_left:
 
     st.markdown("---")
     st.markdown("### 💡 គន្លឹះសំខាន់៖")
-    st.info("ពេលចុចទាញយកសម្លេង ប្រព័ន្ធនឹងកំណត់ថិរវេលា (Start & Duration) ជូនដោយស្វ័យប្រវត្តិតាមវីដេអូ។ អ្នកគ្រាន់តែ **សរសេរ ឬកែអត្ថបទជាភាសាខ្មែរ** ក្នុងប្រអប់ខាងស្តាំ រួចចុច Render ជាការស្រេច!")
+    st.info("1. Upload វីដេអូរបស់អ្នក។\n2. ចុចប៊ូតុង **'🪄 ទាញយកថិរវេលា...'** ដើម្បីឱ្យ AI ចាប់ម៉ោងនិយាយពីវីដេអូ។\n3. សរសេរអត្ថបទខ្មែរចូលក្នុងប្រអប់ រួចចុច Render ជាការស្រេច!")
 
 with col_center:
     st.markdown("### 📝 តារាងគ្រប់គ្រងថិរវេលា និងអត្ថបទសន្ទនាខ្មែរ")
     
+    # Set default as empty list so no old text appears initially
     if 'auto_subtitles' not in st.session_state:
-        st.session_state.auto_subtitles = [
-            {"time_sec": 1.0, "duration": 3.0, "speaker": "សម្រាយរឿង", "khmer": "នាវាចង់លិចហើយ ជួយខ្ញុំផង!"}
-        ]
+        st.session_state.auto_subtitles = []
 
     # Button to Extract Audio Timing using Whisper
     if st.button("🪄 ទាញយកថិរវេលា និងសម្លេងពីវីដេអូ (Whisper Timing)"):
@@ -85,7 +84,7 @@ with col_center:
                 extract_cmd = ["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path]
                 subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
-                status_text.text("⏳ កំពុងដំណើរការ Whisper AI ស្គាល់ថិរវេលា..." )
+                status_text.text("⏳ កំពុងដំណើរការ Whisper AI ស្គាល់ថិរវេលា...")
                 progress_bar.progress(70)
                 
                 model = whisper.load_model("base")
@@ -102,12 +101,12 @@ with col_center:
                         "time_sec": round(start_time, 2),
                         "duration": round(duration, 2),
                         "speaker": "សម្រាយរឿង",
-                        "khmer": "សរសេរអត្ថបទខ្មែរនៅទីនេះ"
+                        "khmer": ""  # Blank for user to input new text
                     })
                 
                 progress_bar.progress(100)
                 status_text.text("🎉 ទាញយកថិរវេលាជោគជ័យ!")
-                st.success("✅ បានទាញយកថិរវេលារួចរាល់! សូមបំពេញអត្ថបទខ្មែរតាមចំណូលចិត្ត។")
+                st.success("✅ បានទាញយកថិរវេលារួចរាល់! សូមបំពេញអត្ថបទខ្មែរតាមវីដេអូរបស់អ្នក។")
                 st.rerun()
                 
             except Exception as e:
@@ -115,7 +114,7 @@ with col_center:
         else:
             st.warning("⚠️ សូម Upload វីដេអូមុនសិន!")
 
-    # Display Subtitles Table
+    # Display Subtitles Table only when generated
     if st.session_state.auto_subtitles:
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             cols = st.columns([0.8, 0.8, 1.2, 3])
@@ -229,3 +228,5 @@ with col_center:
                         )
                 except Exception as e:
                     st.error(f"❌ កើតកំហុសក្នុងដំណើរការ Render: {e}")
+    else:
+        st.info("👆 សូម Upload វីដេអូ និងចុចប៊ូតុង **'🪄 ទាញយកថិរវេលា និងសម្លេងពីវីដេអូ'** ដើម្បីចាប់ផ្តើមสร้าง Script សម្រាប់រឿងថ្មីរបស់អ្នក។")
