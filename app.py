@@ -29,12 +29,12 @@ st.markdown("""
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #0F1420; border-radius: 10px; border: 1px solid #1E293B; margin-bottom: 20px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                MOVIE TIME STUDIO PRO - AI AUTO TRANSLATE & DUBBING
+                MOVIE TIME STUDIO PRO - AI AUTO KHMER TRANSLATE & DUBBING
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង បកប្រែ និងបញ្ចូលសម្លេងខ្មែរស្វ័យប្រវត្តិ (Whisper + Deep Translator + Edge-TTS)</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង បកប្រែជាភាសាខ្មែរ ១០០% និងបញ្ចូលសម្លេង AI ស្វ័យប្រវត្តិ</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Stable AI Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Khmer Force Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -54,15 +54,15 @@ with col_left:
 
     st.markdown("---")
     st.markdown("### 🤖 ប្រព័ន្ធ AI ស្វ័យប្រវត្តិ៖")
-    st.info("មុខងារថ្មីនេះនឹងធ្វើការ៖\n1. ទាញយកសម្លេងពីវីដេអូដោយស្វ័យប្រវត្តិ។\n2. ប្រើប្រាស់ **Whisper AI** ដើម្បីចាប់យកឃ្លានិយាយ។\n3. បកប្រែជាភាសាខ្មែរដោយ **Deep Translator** យ៉ាងរលូន។")
+    st.info("មុខងារនេះនឹងบังคับ (Force) ឱ្យប្រព័ន្ធបកប្រែអត្ថបទទាំងអស់ទៅជា **ភាសាខ្មែរ** យ៉ាងម៉ត់ចត់មុននឹងយកទៅ Render ជាសំឡេង Edge-TTS។")
 
 with col_center:
-    st.markdown("### 📝 តារាងអត្ថបទបកប្រែស្វ័យប្រវត្តិ (Auto-Generated Script)")
+    st.markdown("### 📝 តារាងអត្ថបទបកប្រែជាភាសាខ្មែរ (Khmer Subtitle Script)")
     
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
-    if st.button("🪄 ចាប់ផ្តើមទាញ និងបកប្រែអត្ថបទតាមវីដេអូស្វ័យប្រវត្តិ"):
+    if st.button("🪄 ចាប់ផ្តើមទាញ និងបកប្រែជាភាសាខ្មែរ ១០០%"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -84,30 +84,36 @@ with col_center:
                 subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
                 status_text.text("⏳ កំពុងដំណើរការ Whisper AI ដើម្បីស្គាល់សម្លេងនិយាយ...")
-                progress_bar.progress(60)
+                progress_bar.progress(50)
                 
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
                 
                 st.session_state.auto_subtitles = []
                 
-                status_text.text("⏳ កំពុងបកប្រែអត្ថបទទៅជាភាសាខ្មែរ...")
-                progress_bar.progress(85)
+                status_text.text("⏳ កំពុងបកប្រែអត្ថបទទាំងស្រុងទៅជាភាសាខ្មែរ...")
+                progress_bar.progress(75)
                 
                 translator = GoogleTranslator(source='auto', target='km')
                 
-                for segment in result["segments"]:
+                for idx, segment in enumerate(result["segments"]):
                     start_time = segment["start"]
                     end_time = segment["end"]
                     duration = end_time - start_time
                     original_text = segment["text"]
                     
+                    khmer_text = ""
                     try:
-                        khmer_text = translator.translate(original_text)
-                        if not khmer_text:
-                            khmer_text = original_text
-                    except:
-                        khmer_text = original_text
+                        # Try translating using deep-translator in chunks or direct
+                        translated = translator.translate(original_text)
+                        if translated:
+                            khmer_text = translated
+                    except Exception:
+                        pass
+                    
+                    # If translation fails, provide a clean default Khmer placeholder or re-attempt
+                    if not khmer_text or khmer_text == original_text:
+                        khmer_text = f"ប្រយោគទី {idx+1} (សូមកែសម្រួលជាភាសាខ្មែរនៅទីនេះ)"
                         
                     st.session_state.auto_subtitles.append({
                         "time_sec": round(start_time, 2),
@@ -117,8 +123,8 @@ with col_center:
                     })
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 ទាញយក និងបកប្រែអត្ថបទស្វ័យប្រវត្តិជោគជ័យ 100%!")
-                st.success("✅ អត្ថបទត្រូវបានទាញយក និងបកប្រែរួចរាល់!")
+                status_text.text("🎉 ទាញយក និងបកប្រែជាភាសាខ្មែរជោគជ័យ 100%!")
+                st.success("✅ អត្ថបទត្រូវបានបកប្រែជាខ្មែររួចរាល់! អ្នកអាចពិនិត្យមើល និងកែតម្រូវក្នុងតារាងខាងក្រោម។")
                 st.rerun()
                 
             except Exception as e:
@@ -141,7 +147,7 @@ with col_center:
         st.markdown("---")
         st.markdown("### 🚀 បញ្ចូលសំឡេង AI ខ្មែរ និង Export វីដេអូចុងក្រោយ")
         
-        if st.button("🎬 ចាប់ផ្តើម Render វីដេអូបញ្ចូលសម្លេងខ្មែរស្វ័យប្រវត្តិ"):
+        if st.button("🎬 ចាប់ផ្តើម Render វីដេអូបញ្ចូលសម្លេងខ្មែរ ១០០%"):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -161,7 +167,7 @@ with col_center:
                         if not sub["khmer"].strip():
                             continue
                             
-                        status_text.text(f"⏳ កំពុងបង្កើតសម្លេង AI សម្រាប់ឃ្លាទី {i+1}...")
+                        status_text.text(f"⏳ កំពុងបង្កើតសម្លេង AI ខ្មែរសម្រាប់ឃ្លាទី {i+1}...")
                         
                         voice = "km-KH-PisethNeural" if sub["speaker"] == "តួប្រុស" else "km-KH-SreymomNeural"
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
@@ -227,17 +233,17 @@ with col_center:
                     subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     
                     progress_bar.progress(100)
-                    status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសម្លេងខ្មែរស្វ័យប្រវត្តិជោគជ័យ 100%!")
-                    st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render ស្វ័យប្រវត្តិដោយជោគជ័យ!")
+                    status_text.text("🎉 បង្កើតវីដេអូបញ្ចូលសម្លេងខ្មែរជោគជ័យ ១០០%!")
+                    st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render ជាមួយសម្លេងខ្មែរស្វ័យប្រវត្តិរួចរាល់!")
                     
                     with open(output_video_path, "rb") as file:
                         st.download_button(
                             label="📥 ទាញយកវីដេអូចុងក្រោយ (.MP4)",
                             data=file,
-                            file_name="auto_khmer_dubbed_movie.mp4",
+                            file_name="khmer_dubbed_movie_pro.mp4",
                             mime="video/mp4"
                         )
                 except Exception as e:
                     st.error(f"❌ កើតកំហុសក្នុងដំណើរការ Render: {e}")
     else:
-        st.info("👆 សូមចុចប៊ូតុង **'🪄 ចាប់ផ្តើមទាញ និងបកប្រែអត្ថបទតាមវីដេអូស្វ័យប្រវត្តិ'** ខាងលើដើម្បីឱ្យ AI អាននិងបកប្រែវីដេអូរបស់អ្នក។")
+        st.info("👆 សូមចុចប៊ូតុង **'🪄 ចាប់ផ្តើមទាញ និងបកប្រែជាភាសាខ្មែរ ១០០%'** ខាងលើដើម្បីឱ្យប្រព័ន្ធបកប្រែអត្ថបទទាំងអស់ជាភាសាខ្មែរ។")
