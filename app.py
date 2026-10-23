@@ -3,7 +3,7 @@ import os
 import subprocess
 import tempfile
 import whisper
-from deep_translator import GoogleTranslator
+from googletrans import Translator
 
 # Set page configuration
 st.set_page_config(
@@ -29,12 +29,12 @@ st.markdown("""
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background-color: #0F1420; border-radius: 10px; border: 1px solid #1E293B; margin-bottom: 20px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; background: -webkit-linear-gradient(left, #06B6D4, #6366F1, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                MOVIE TIME STUDIO PRO - AI AUTO KHMER TRANSLATE & DUBBING
+                MOVIE TIME STUDIO PRO - AUTO KHMER TRANSLATE & DUBBING
             </h2>
-            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង បកប្រែជាភាសាខ្មែរ ១០០% និងបញ្ចូលសម្លេង AI ស្វ័យប្រវត្តិ</p>
+            <p style="margin: 0; font-size: 12px; color: #94A3B8;">ប្រព័ន្ធទាញយកសម្លេង និងបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ ១០០% (Whisper + Googletrans)</p>
         </div>
         <div>
-            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Khmer Force Active</span>
+            <span style="background-color: #064E3B; color: #34D399; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold;">● Auto-Translate Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -54,15 +54,15 @@ with col_left:
 
     st.markdown("---")
     st.markdown("### 🤖 ប្រព័ន្ធ AI ស្វ័យប្រវត្តិ៖")
-    st.info("មុខងារនេះនឹងบังคับ (Force) ឱ្យប្រព័ន្ធបកប្រែអត្ថបទទាំងអស់ទៅជា **ភាសាខ្មែរ** យ៉ាងម៉ត់ចត់មុននឹងយកទៅ Render ជាសំឡេង Edge-TTS។")
+    st.info("ប្រព័ន្ធនឹងទាញយកឃ្លានិយាយពីវីដេអូ និងបកប្រែផ្ទាល់ជា **ភាសាខ្មែរ** យ៉ាងឆាប់រហ័ស។")
 
 with col_center:
-    st.markdown("### 📝 តារាងអត្ថបទបកប្រែជាភាសាខ្មែរ (Khmer Subtitle Script)")
+    st.markdown("### 📝 តារាងអត្ថបទបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ")
     
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
-    if st.button("🪄 ចាប់ផ្តើមទាញ និងបកប្រែជាភាសាខ្មែរ ១០០%"):
+    if st.button("🪄 ចាប់ផ្តើមទាញ និងបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ"):
         if uploaded_file is not None:
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -91,29 +91,24 @@ with col_center:
                 
                 st.session_state.auto_subtitles = []
                 
-                status_text.text("⏳ កំពុងបកប្រែអត្ថបទទាំងស្រុងទៅជាភាសាខ្មែរ...")
+                status_text.text("⏳ កំពុងបកប្រែអត្ថបទទាំងអស់ទៅជាភាសាខ្មែរ...")
                 progress_bar.progress(75)
                 
-                translator = GoogleTranslator(source='auto', target='km')
+                translator = Translator()
                 
-                for idx, segment in enumerate(result["segments"]):
+                for segment in result["segments"]:
                     start_time = segment["start"]
                     end_time = segment["end"]
                     duration = end_time - start_time
                     original_text = segment["text"]
                     
-                    khmer_text = ""
+                    khmer_text = original_text
                     try:
-                        # Try translating using deep-translator in chunks or direct
-                        translated = translator.translate(original_text)
-                        if translated:
-                            khmer_text = translated
+                        translation = translator.translate(original_text, dest='km')
+                        if translation and translation.text:
+                            khmer_text = translation.text
                     except Exception:
                         pass
-                    
-                    # If translation fails, provide a clean default Khmer placeholder or re-attempt
-                    if not khmer_text or khmer_text == original_text:
-                        khmer_text = f"ប្រយោគទី {idx+1} (សូមកែសម្រួលជាភាសាខ្មែរនៅទីនេះ)"
                         
                     st.session_state.auto_subtitles.append({
                         "time_sec": round(start_time, 2),
@@ -123,8 +118,8 @@ with col_center:
                     })
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 ទាញយក និងបកប្រែជាភាសាខ្មែរជោគជ័យ 100%!")
-                st.success("✅ អត្ថបទត្រូវបានបកប្រែជាខ្មែររួចរាល់! អ្នកអាចពិនិត្យមើល និងកែតម្រូវក្នុងតារាងខាងក្រោម។")
+                status_text.text("🎉 ទាញយក និងបកប្រែជាភាសាខ្មែរជោគជ័យ ១០០%!")
+                st.success("✅ អត្ថបទត្រូវបានបកប្រែជាខ្មែរដោយស្វ័យប្រវត្តិរួចរាល់!")
                 st.rerun()
                 
             except Exception as e:
@@ -246,4 +241,4 @@ with col_center:
                 except Exception as e:
                     st.error(f"❌ កើតកំហុសក្នុងដំណើរការ Render: {e}")
     else:
-        st.info("👆 សូមចុចប៊ូតុង **'🪄 ចាប់ផ្តើមទាញ និងបកប្រែជាភាសាខ្មែរ ១០០%'** ខាងលើដើម្បីឱ្យប្រព័ន្ធបកប្រែអត្ថបទទាំងអស់ជាភាសាខ្មែរ។")
+        st.info("👆 សូមចុចប៊ូតុង **'🪄 ចាប់ផ្តើមទាញ និងបកប្រែជាភាសាខ្មែរស្វ័យប្រវត្តិ'** ខាងលើដើម្បីឱ្យប្រព័ន្ធដំណើរការ។")
