@@ -16,14 +16,11 @@ st.set_page_config(
 # Custom Cyberpunk / Dark Pro Styling
 st.markdown("""
     <style>
-    /* Main Background */
     .stApp {
         background-color: #05070C !important;
         color: #E2E8F0;
         font-family: 'Khmer OS Battambang', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    
-    /* Top Header Bar */
     .header-bar {
         display: flex;
         align-items: center;
@@ -35,7 +32,6 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
         margin-bottom: 20px;
     }
-    
     .brand-title {
         font-size: 22px;
         font-weight: 800;
@@ -46,13 +42,7 @@ st.markdown("""
         align-items: center;
         gap: 10px;
     }
-    
-    /* Status Badges */
-    .badge-container {
-        display: flex;
-        gap: 10px;
-    }
-    
+    .badge-container { display: flex; gap: 10px; }
     .badge-vip {
         background: rgba(225, 29, 72, 0.2);
         color: #FB7185;
@@ -62,7 +52,6 @@ st.markdown("""
         font-size: 12px;
         font-weight: bold;
     }
-    
     .badge-ready {
         background: rgba(16, 185, 129, 0.2);
         color: #34D399;
@@ -72,8 +61,6 @@ st.markdown("""
         font-size: 12px;
         font-weight: bold;
     }
-
-    /* Cards Panel */
     .card-panel {
         background: #0D121F;
         border: 1px solid #1E293B;
@@ -82,8 +69,6 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.4);
         margin-bottom: 20px;
     }
-
-    /* Gradient Neon Buttons */
     .stButton > button {
         background: linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%) !important;
         color: #FFFFFF !important;
@@ -99,22 +84,16 @@ st.markdown("""
         box-shadow: 0 0 18px rgba(14, 165, 233, 0.6) !important;
         transform: translateY(-2px);
     }
-    
-    /* Input Fields */
     .stTextInput > div > div > input, .stTextArea > div > div > textarea {
         background-color: #111827 !important;
         color: #F3F4F6 !important;
         border: 1px solid #374151 !important;
         border-radius: 8px !important;
     }
-    .stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus {
-        border-color: #38BDF8 !important;
-        box-shadow: 0 0 8px rgba(56, 189, 248, 0.4) !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# 1. Header Banner
+# Header Banner
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
@@ -127,7 +106,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Main Grid Layout
 col_left, col_right = st.columns([1.1, 1.9])
 
 with col_left:
@@ -149,7 +127,6 @@ with col_right:
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
-    # Toolbar Row Buttons
     tb_col1, tb_col2, tb_col3 = st.columns(3)
     with tb_col1:
         btn_extract = st.button("🪄 1. Extract & Auto Translate", use_container_width=True)
@@ -285,10 +262,11 @@ with col_right:
                     valid_subtitles = []
                     
                     for i, sub in enumerate(st.session_state.auto_subtitles):
-                        if not sub["khmer"].strip():
+                        clean_text = sub["khmer"].strip()
+                        # Skip if text is empty or only punctuation marks
+                        if not clean_text or clean_text in ["。", ".", "ฯ", "?", "!"]:
                             continue
                             
-                        valid_subtitles.append(sub)
                         status_text.text(f"⏳ Generating Khmer AI voice #{i+1}...")
                         
                         voice = "km-KH-PisethNeural" if sub["speaker"] == "តួប្រុស" else "km-KH-SreymomNeural"
@@ -296,12 +274,16 @@ with col_right:
                         
                         edge_cmd = [
                             "edge-tts",
-                            "--text", sub["khmer"],
+                            "--text", clean_text,
                             "--voice", voice,
                             "--write-media", line_audio_path
                         ]
                         subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        audio_inputs.extend(["-i", line_audio_path])
+                        
+                        # Validate if audio file was generated successfully and size > 0
+                        if os.path.exists(line_audio_path) and os.path.getsize(line_audio_path) > 100:
+                            valid_subtitles.append(sub)
+                            audio_inputs.extend(["-i", line_audio_path])
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
@@ -360,7 +342,9 @@ with col_right:
                                     use_container_width=True
                                 )
                         else:
-                            st.error("❌ FFmpeg Render failed. Please try again.")
+                            st.error(f"❌ FFmpeg Render failed: {process.stderr.decode('utf-8')[:300]}")
+                    else:
+                        st.error("❌ No valid subtitles found or audio generation failed.")
                 except Exception as e:
                     st.error(f"❌ Render Exception: {e}")
     else:
