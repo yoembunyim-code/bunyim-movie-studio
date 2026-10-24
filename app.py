@@ -101,7 +101,7 @@ st.markdown("""
         </div>
         <div class="badge-container">
             <span class="badge-vip">❤️ Lifetime VIP</span>
-            <span class="badge-ready">🟢 System Ready</span>
+            <span class="badge-ready">🟢 HD Voice Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -122,7 +122,7 @@ with col_left:
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Subtitle & Dubbing Control Panel")
+    st.markdown("### 🎛️ Subtitle & HD Voice Control Panel")
     
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
@@ -220,6 +220,8 @@ with col_right:
     # Subtitles Editor Grid
     if st.session_state.auto_subtitles:
         st.markdown("---")
+        st.markdown("💡 *គន្លឹះ៖ អ្នកអាចកែសម្រួលអត្ថបទខ្មែរក្នុងប្រអប់ខាងក្រោមដោយផ្ទាល់ ដើម្បីឱ្យអត្ថន័យកាន់តែពីរោះ និងត្រូវមាត់ល្អមុនពេល Render។*")
+        
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
             with c1:
@@ -244,7 +246,7 @@ with col_right:
         st.markdown("---")
         st.markdown("### 🚀 Export Khmer AI Dubbed Video")
         
-        if st.button("🎬 Render Final Video", use_container_width=True):
+        if st.button("🎬 Render Final Video (HD Voice)", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -263,31 +265,37 @@ with col_right:
                     
                     for i, sub in enumerate(st.session_state.auto_subtitles):
                         clean_text = sub["khmer"].strip()
-                        # Skip if text is empty or only punctuation marks
                         if not clean_text or clean_text in ["。", ".", "ฯ", "?", "!"]:
                             continue
                             
-                        status_text.text(f"⏳ Generating Khmer AI voice #{i+1}...")
+                        status_text.text(f"⏳ Generating HD Khmer voice #{i+1}...")
                         
-                        voice = "km-KH-PisethNeural" if sub["speaker"] == "តួប្រុស" else "km-KH-SreymomNeural"
+                        # Assigned high-quality neural voices
+                        if sub["speaker"] == "តួប្រុស":
+                            voice = "km-KH-PisethNeural"
+                        elif sub["speaker"] == "តួស្រី":
+                            voice = "km-KH-SreymomNeural"
+                        else:
+                            voice = "km-KH-PisethNeural"  # Narrator / សម្រាយរឿង
+                            
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
                         edge_cmd = [
                             "edge-tts",
                             "--text", clean_text,
                             "--voice", voice,
+                            "--rate", "+0%",  # Normal speed for clear articulation
                             "--write-media", line_audio_path
                         ]
                         subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         
-                        # Validate if audio file was generated successfully and size > 0
                         if os.path.exists(line_audio_path) and os.path.getsize(line_audio_path) > 100:
                             valid_subtitles.append(sub)
                             audio_inputs.extend(["-i", line_audio_path])
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Mixing AI voiceover tracks with FFmpeg...")
+                        status_text.text("⏳ Mixing HD voiceover tracks with FFmpeg...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         filter_complex_parts = []
@@ -297,11 +305,11 @@ with col_right:
                             delay_ms = int(sub["time_sec"] * 1000)
                             target_duration = sub["duration"]
                             char_count = len(sub["khmer"])
-                            estimated_audio_duration = char_count / 12.0
+                            estimated_audio_duration = char_count / 11.0  # Optimized speech pacing
                             
                             speed_factor = 1.0
                             if estimated_audio_duration > target_duration and target_duration > 0:
-                                speed_factor = min(round(estimated_audio_duration / target_duration, 2), 2.0)
+                                speed_factor = min(round(estimated_audio_duration / target_duration, 2), 1.8)
                             
                             if speed_factor != 1.0:
                                 filter_complex_parts.append(f"[{idx+1}:a]atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
@@ -331,13 +339,13 @@ with col_right:
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
                             status_text.text("🎉 Video Dubbing Completed!")
-                            st.success("✅ Finished! You can now download the output file.")
+                            st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render រួចរាល់ដោយសំឡេងច្បាស់ល្អ និងត្រូវមាត់!")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
-                                    label="📥 Download Final Video (.MP4)",
+                                    label="📥 Download HD Dubbed Video (.MP4)",
                                     data=file,
-                                    file_name="movie_time_pro_dubbed.mp4",
+                                    file_name="movie_time_hd_dubbed.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
