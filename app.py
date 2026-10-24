@@ -101,7 +101,7 @@ st.markdown("""
         </div>
         <div class="badge-container">
             <span class="badge-vip">❤️ Lifetime VIP</span>
-            <span class="badge-ready">🟢 HD Voice Active</span>
+            <span class="badge-ready">🟢 Music Only + AI Voice Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -122,7 +122,7 @@ with col_left:
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Subtitle & HD Voice Control Panel")
+    st.markdown("### 🎛️ Subtitle & Music Mixing Control Panel")
     
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
@@ -214,13 +214,13 @@ with col_right:
                         st.session_state.auto_subtitles[idx]["khmer"] = translated
                 except Exception:
                     pass
-        st.success("✅ Force Translation Finished!")
+            st.success("✅ Force Translation Finished!")
         st.rerun()
 
     # Subtitles Editor Grid
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *គន្លឹះ៖ អ្នកអាចកែសម្រួលអត្ថបទខ្មែរក្នុងប្រអប់ខាងក្រោមដោយផ្ទាល់ ដើម្បីឱ្យអត្ថន័យកាន់តែពីរោះ និងត្រូវមាត់ល្អមុនពេល Render។*")
+        st.markdown("💡 *គន្លឹះ៖ អ្នកអាចកែសម្រួលអត្ថបទខ្មែរក្នុងប្រអប់ខាងក្រោមបានតាមចិត្តមុនពេល Render។*")
         
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
@@ -244,9 +244,9 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export Khmer AI Dubbed Video")
+        st.markdown("### 🚀 Export Khmer AI Dubbed Video (Music Only + Loud AI Voice)")
         
-        if st.button("🎬 Render Final Video (HD Voice)", use_container_width=True):
+        if st.button("🎬 Render Final Video (Music Only)", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -268,15 +268,14 @@ with col_right:
                         if not clean_text or clean_text in ["。", ".", "ฯ", "?", "!"]:
                             continue
                             
-                        status_text.text(f"⏳ Generating HD Khmer voice #{i+1}...")
+                        status_text.text(f"⏳ Generating AI voice #{i+1}...")
                         
-                        # Assigned high-quality neural voices
                         if sub["speaker"] == "តួប្រុស":
                             voice = "km-KH-PisethNeural"
                         elif sub["speaker"] == "តួស្រី":
                             voice = "km-KH-SreymomNeural"
                         else:
-                            voice = "km-KH-PisethNeural"  # Narrator / សម្រាយរឿង
+                            voice = "km-KH-PisethNeural"
                             
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
@@ -284,7 +283,7 @@ with col_right:
                             "edge-tts",
                             "--text", clean_text,
                             "--voice", voice,
-                            "--rate", "+0%",  # Normal speed for clear articulation
+                            "--rate", "+0%",
                             "--write-media", line_audio_path
                         ]
                         subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -295,30 +294,39 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Mixing HD voiceover tracks with FFmpeg...")
+                        status_text.text("⏳ Filtering out original speech and keeping background music via FFmpeg...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         filter_complex_parts = []
                         mix_inputs = []
                         
+                        # Use FFmpeg highpass/lowpass & pan filter to suppress center-channel vocals (original speech) 
+                        # and lower volume to 25% so it acts purely as background music (BGM).
+                        filter_complex_parts.append("[0:a]pan=stereo|c0=c0-c1|c1=c1-c0,volume=0.25[bgm]")
+                        mix_inputs.append("[bgm]")
+                        
+                        # Process each AI Voice line (Volume boosted to 1.7x for crystal clear narration)
                         for idx, sub in enumerate(valid_subtitles):
                             delay_ms = int(sub["time_sec"] * 1000)
                             target_duration = sub["duration"]
                             char_count = len(sub["khmer"])
-                            estimated_audio_duration = char_count / 11.0  # Optimized speech pacing
+                            estimated_audio_duration = char_count / 11.0
                             
                             speed_factor = 1.0
                             if estimated_audio_duration > target_duration and target_duration > 0:
                                 speed_factor = min(round(estimated_audio_duration / target_duration, 2), 1.8)
                             
+                            stream_idx = idx + 1
                             if speed_factor != 1.0:
-                                filter_complex_parts.append(f"[{idx+1}:a]atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
+                                filter_complex_parts.append(f"[{stream_idx}:a]volume=1.7,atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
                             else:
-                                filter_complex_parts.append(f"[{idx+1}:a]adelay={delay_ms}|{delay_ms}[a{idx}]")
+                                filter_complex_parts.append(f"[{stream_idx}:a]volume=1.7,adelay={delay_ms}|{delay_ms}[a{idx}]")
                                 
                             mix_inputs.append(f"[a{idx}]")
                         
-                        mix_filter = "".join(mix_inputs) + f"amix=inputs={len(valid_subtitles)}:duration=longest[aout]"
+                        # Mix suppressed BGM and AI voice lines together
+                        total_inputs = len(valid_subtitles) + 1
+                        mix_filter = "".join(mix_inputs) + f"amix=inputs={total_inputs}:duration=first:dropout_transition=2[aout]"
                         filter_complex_parts.append(mix_filter)
                         
                         full_filter_str = ";".join(filter_complex_parts)
@@ -339,13 +347,13 @@ with col_right:
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
                             status_text.text("🎉 Video Dubbing Completed!")
-                            st.success("✅ វីដេអូរឿងរបស់អ្នកត្រូវបាន Render រួចរាល់ដោយសំឡេងច្បាស់ល្អ និងត្រូវមាត់!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់! សម្លេងនិយាយដើមត្រូវបានកាត់បន្ថយ ហើយទាញយកតែសម្លេងភ្លេងអមជាមួយសម្លេង AI ខ្មែរយ៉ាងច្បាស់ល្អ។")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
-                                    label="📥 Download HD Dubbed Video (.MP4)",
+                                    label="📥 Download Music-Only Dubbed Video (.MP4)",
                                     data=file,
-                                    file_name="movie_time_hd_dubbed.mp4",
+                                    file_name="movie_time_music_only.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
