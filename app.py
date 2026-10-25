@@ -5,7 +5,7 @@ import tempfile
 import whisper
 from translate import Translator
 
-# Page Configuration with 200MB Upload Limit Support
+# Page Configuration with 1000MB Upload Limit Support
 st.set_page_config(
     page_title="Movie Time - AI Dubbing & Subtitle Studio",
     page_icon="🎬",
@@ -97,11 +97,11 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎬 MOVIE TIME <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AI SUBTITLE & DUBBING STUDIO</span>
+            🎬 MOVIE TIME <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AI SUBTITLE & DUBBING STUDIO (1GB)</span>
         </div>
         <div class="badge-container">
             <span class="badge-vip">❤️ VIP Pro Studio</span>
-            <span class="badge-ready">🟢 Subtitle Overlay Active</span>
+            <span class="badge-ready">🟢 Large Video Support Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -110,22 +110,21 @@ col_left, col_right = st.columns([1.1, 1.9])
 
 with col_left:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 📺 Video Preview (Up to 200MB)")
-    uploaded_file = st.file_uploader("Upload Video File (.MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
+    st.markdown("### 📺 Video Preview (Up to 1000MB / 1GB)")
+    uploaded_file = st.file_uploader("Upload Video File (.MP4, .MKV, .MOV) - Max 1GB", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
         st.video(uploaded_file)
         file_size_mb = uploaded_file.size / (1024 * 1024)
         st.success(f"📁 Loaded: {uploaded_file.name} ({file_size_mb:.2f} MB)")
     else:
-        st.info("📌 Drop your video file here (Up to 200MB).")
+        st.info("📌 Drop your large video file here (Up to 1GB).")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
     st.markdown("### 🎛️ Subtitle & Text Overlay Control Panel")
     
-    # Subtitle Options Expander
     with st.expander("⚙️ កែសម្រួលការបង្ហាញអក្សររត់លើវីដេអូ (Subtitle Options)", expanded=True):
         burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) ទៅលើវីដេអូផ្ទាល់ (Burn-in)", value=True)
         anti_copy_audio = st.checkbox("🟢 បើកប្រព័ន្ធការពារ Copyright សម្លេង (Audio Shift)", value=True)
@@ -151,7 +150,7 @@ with col_right:
             status_text = st.empty()
             
             try:
-                status_text.text("⏳ Saving video file...")
+                status_text.text("⏳ Saving large video file...")
                 progress_bar.progress(15)
                 
                 tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
@@ -364,7 +363,6 @@ with col_right:
                         ffmpeg_cmd = ["ffmpeg", "-y", "-i", input_video_path]
                         ffmpeg_cmd.extend(audio_inputs)
                         
-                        # Add subtitle burn-in filter if checked
                         if burn_subtitles:
                             escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
                             video_filter = f"subtitles='{escaped_srt_path}':force_style='FontName=Khmer OS Battambang,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2'"
@@ -402,6 +400,6 @@ with col_right:
                 except Exception as e:
                     st.error(f"❌ Render Exception: {e}")
     else:
-        st.info("👆 Upload a video up to 200MB and click **'Extract & Auto Translate'** to start.")
+        st.info("👆 Upload a video up to 1GB and click **'Extract & Auto Translate'** to start.")
     
     st.markdown('</div>', unsafe_allow_html=True)
