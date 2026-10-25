@@ -223,7 +223,7 @@ with col_right:
         st.success("✅ Force Translation Finished!")
         st.rerun()
 
-    # Subtitles Editor Grid (Full control to edit text and timing)
+    # Subtitles Editor Grid
     if st.session_state.auto_subtitles:
         st.markdown("---")
         st.markdown("💡 *ឧបករណ៍សារេដោយខ្លួនឯង៖ អ្នកអាចកែសម្រួលអត្ថបទខ្មែរ ថិរវេលា (Start/Dur) និងតួអង្គបានតាមចិត្តមុនពេល Render។*")
@@ -359,7 +359,6 @@ with col_right:
                         mix_filter = "".join(mix_inputs) + f"amix=inputs={total_inputs}:duration=first:dropout_transition=2[aout]"
                         filter_complex_parts.append(mix_filter)
                         
-                        full_filter_str = ";!("{0}".format(";".join(filter_complex_parts)) # Clean string join
                         full_filter_str = ";".join(filter_complex_parts)
                         
                         ffmpeg_cmd = ["ffmpeg", "-y", "-i", input_video_path]
@@ -367,14 +366,13 @@ with col_right:
                         
                         # Add subtitle burn-in filter if checked
                         if burn_subtitles:
-                            # Using absolute path and escaping for FFmpeg subtitle filter format
                             escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
                             video_filter = f"subtitles='{escaped_srt_path}':force_style='FontName=Khmer OS Battambang,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2'"
                             ffmpeg_cmd.extend(["-vf", video_filter])
                             
                         ffmpeg_cmd.extend([
                             "-filter_complex", full_filter_str,
-                            "-map", "0:v" if not burn_subtitles else "0:v", # Video stream mapping
+                            "-map", "0:v" if not burn_subtitles else "0:v",
                             "-map", "[aout]",
                             "-c:v", "libx264",
                             "-preset", "fast",
