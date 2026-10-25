@@ -5,15 +5,15 @@ import tempfile
 import whisper
 from translate import Translator
 
-# Page Configuration with 1000MB Upload Limit Support
+# Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="Movie Time - AI Dubbing & Subtitle Studio",
-    page_icon="🎬",
+    page_title="VoiceClone Studio Pro - Movie Time",
+    page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Cyberpunk / Dark Pro Styling
+# Custom Dark Cyberpunk & VoiceClone Pro Styling
 st.markdown("""
     <style>
     .stApp {
@@ -97,11 +97,11 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎬 MOVIE TIME <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AI SUBTITLE & DUBBING STUDIO (1GB)</span>
+            🎙️ VOICECLONE STUDIO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| PRO AI DUBBING & SUBTITLE STUDIO</span>
         </div>
         <div class="badge-container">
-            <span class="badge-vip">❤️ VIP Pro Studio</span>
-            <span class="badge-ready">🟢 Large Video Support Active</span>
+            <span class="badge-vip">❤️ Voice Library Pro</span>
+            <span class="badge-ready">🟢 Server Online | Model Ready</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -110,23 +110,43 @@ col_left, col_right = st.columns([1.1, 1.9])
 
 with col_left:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 📺 Video Preview (Up to 1000MB / 1GB)")
-    uploaded_file = st.file_uploader("Upload Video File (.MP4, .MKV, .MOV) - Max 1GB", type=["mp4", "mkv", "mov"])
+    st.markdown("### 📺 Video Preview (Up to 1GB)")
+    uploaded_file = st.file_uploader("Upload Video File (.MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
         st.video(uploaded_file)
         file_size_mb = uploaded_file.size / (1024 * 1024)
         st.success(f"📁 Loaded: {uploaded_file.name} ({file_size_mb:.2f} MB)")
     else:
-        st.info("📌 Drop your large video file here (Up to 1GB).")
+        st.info("📌 Drop your video file here (Up to 1GB).")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Subtitle & Text Overlay Control Panel")
+    st.markdown("### 🎛️ Voice Library & Studio Control Center")
     
-    with st.expander("⚙️ កែសម្រួលការបង្ហាញអក្សររត់លើវីដេអូ (Subtitle Options)", expanded=True):
-        burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) ទៅលើវីដេអូផ្ទាល់ (Burn-in)", value=True)
+    # Voice Library Profiles (Advanced Voice Selection similar to VoiceClone Studio Pro)
+    with st.expander("📚 Voice Library (ជ្រើសរើសសំឡេង AI តាមតួអង្គក្នុងរឿង)", expanded=True):
+        st.markdown("📌 កំណត់ម៉ូដសំឡេង AI សម្រាប់តួអង្គនីមួយៗ៖")
+        v1, v2, v3 = st.columns(3)
+        with v1:
+            narrator_profile = st.selectbox("សំឡេងអ្នកសម្រាយរឿង", [
+                "Piseth Pro (ប្រុស - ក្រាស់ច្បាស់)", 
+                "Sreymom Pro (ស្រី - ស្រទន់អន្លង់អន្លោច)"
+            ], index=0)
+        with v2:
+            male_profile = st.selectbox("សំឡេងតួប្រុស", [
+                "Piseth Pro (ប្រុស - ស្តង់ដារ)", 
+                "Sreymom Pro (ជំនួស)"
+            ], index=0)
+        with v3:
+            female_profile = st.selectbox("សំឡេងតួស្រី", [
+                "Sreymom Pro (ស្រី - ពីរោះរណ្ដំ)", 
+                "Piseth Pro (ជំនួស)"
+            ], index=0)
+
+    with st.expander("⚙️ Advanced Director Settings (Subtitle & BGM)", expanded=False):
+        burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូផ្ទាល់", value=True)
         anti_copy_audio = st.checkbox("🟢 បើកប្រព័ន្ធការពារ Copyright សម្លេង (Audio Shift)", value=True)
 
     if 'auto_subtitles' not in st.session_state:
@@ -150,7 +170,7 @@ with col_right:
             status_text = st.empty()
             
             try:
-                status_text.text("⏳ Saving large video file...")
+                status_text.text("⏳ Saving video file...")
                 progress_bar.progress(15)
                 
                 tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
@@ -225,7 +245,7 @@ with col_right:
     # Subtitles Editor Grid
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *ឧបករណ៍សារេដោយខ្លួនឯង៖ អ្នកអាចកែសម្រួលអត្ថបទខ្មែរ ថិរវេលា (Start/Dur) និងតួអង្គបានតាមចិត្តមុនពេល Render។*")
+        st.markdown("💡 *Voice Library Script Editor: កែសម្រួលអត្ថបទ ថិរវេលា និងជ្រើសរើសតួអង្គឱ្យបានត្រឹមត្រូវ។*")
         
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
@@ -249,15 +269,15 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export Video with Subtitles & AI Dubbing")
+        st.markdown("### 🚀 Export VoiceClone Pro Video")
         
-        if st.button("🎬 Render Final Video (Subtitles + AI Voice + BGM)", use_container_width=True):
+        if st.button("🎬 Render VoiceClone Pro Video (Subtitles + Multi-Voices + BGM)", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 
                 try:
-                    status_text.text("⏳ Preparing rendering environment & Subtitles file...")
+                    status_text.text("⏳ Preparing rendering environment...")
                     progress_bar.progress(10)
                     
                     tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
@@ -265,7 +285,7 @@ with col_right:
                     input_video_path = tfile.name
                     tfile.close()
                     
-                    # Create SRT Subtitle File for Burn-in
+                    # Create SRT Subtitle File
                     srt_path = tempfile.NamedTemporaryFile(delete=False, suffix='.srt', mode='w', encoding='utf-8')
                     for i, sub in enumerate(st.session_state.auto_subtitles):
                         clean_text = sub["khmer"].strip()
@@ -295,14 +315,15 @@ with col_right:
                         if not clean_text or clean_text in ["。", ".", "ฯ", "?", "!"]:
                             continue
                             
-                        status_text.text(f"⏳ Generating AI voice #{i+1}...")
+                        status_text.text(f"⏳ Generating VoiceClone audio #{i+1}...")
                         
+                        # Apply selected voices from Voice Library
                         if sub["speaker"] == "តួប្រុស":
-                            voice = "km-KH-PisethNeural"
+                            voice = "km-KH-PisethNeural" if "Piseth" in male_profile else "km-KH-SreymomNeural"
                         elif sub["speaker"] == "តួស្រី":
-                            voice = "km-KH-SreymomNeural"
+                            voice = "km-KH-SreymomNeural" if "Sreymom" in female_profile else "km-KH-PisethNeural"
                         else:
-                            voice = "km-KH-PisethNeural"
+                            voice = "km-KH-PisethNeural" if "Piseth" in narrator_profile else "km-KH-SreymomNeural"
                             
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
@@ -321,7 +342,7 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Mixing audio, BGM, and burning subtitles onto video via FFmpeg...")
+                        status_text.text("⏳ Mixing audio tracks and rendering via FFmpeg...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
@@ -382,14 +403,14 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Video Rendering Completed Successfully!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់! អត្ថបទរត់ (Subtitles) ត្រូវបានដាក់បញ្ចាំងលើវីដេអូយ៉ាងស្រស់ស្អាត ព្រមទាំងមានសំឡេង AI និងភ្លេងអមស្រទន់ៗ។")
+                            status_text.text("🎉 VoiceClone Pro Rendering Completed!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់ដោយជោគជ័យជាមួយ Voice Library និង Multi-Voices Studio Pro!")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
-                                    label="📥 Download Subtitle Video (.MP4)",
+                                    label="📥 Download VoiceClone Pro Video (.MP4)",
                                     data=file,
-                                    file_name="movie_time_with_subtitles.mp4",
+                                    file_name="voiceclone_studio_pro.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
