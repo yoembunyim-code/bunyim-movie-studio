@@ -8,7 +8,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - ElevenLabs & BGM Studio",
+    page_title="VoiceClone Studio Pro - Multi-Voice Cards Studio",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -98,11 +98,11 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| ELEVENLABS & BGM MIXING PRO</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| MULTI-VOICE CARDS & BGM STUDIO</span>
         </div>
         <div class="badge-container">
-            <span class="badge-vip">❤️ ElevenLabs & Edge TTS</span>
-            <span class="badge-ready">🟢 BGM & Subtitle Active</span>
+            <span class="badge-vip">❤️ Pro Voice Library</span>
+            <span class="badge-ready">🟢 1GB Video Support Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -124,23 +124,24 @@ with col_left:
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Voice Library & BGM Studio Control")
+    st.markdown("### 🎛️ Voice Library & Studio Control Center")
     
-    # ElevenLabs & Voice Library Configuration
-    with st.expander("🌟 ElevenLabs API & Voice Library Configuration", expanded=True):
-        use_elevenlabs = st.checkbox("🟢 ប្រើប្រាស់ ElevenLabs API (ສຳລັບសំឡេងប្រូ Clone ពីរោះខ្លាំង)", value=False)
-        eleven_api_key = st.text_input("ElevenLabs API Key:", type="password", placeholder="sk_...")
+    # Visual Voice Library Cards Section (Similar to VoiceClone Studio Pro interface)
+    with st.expander("📚 Voice Library Cards (ជ្រើសរើសសំឡេងតួអង្គជាកាត)", expanded=True):
+        st.markdown("📌 ជ្រើសរើសម៉ូដសំឡេង AI សម្រាប់តួអង្គក្នុងរឿងរបស់អ្នក៖")
         
-        st.markdown("📌 កំណត់ម៉ូដសំឡេង AI តាមតួអង្គ៖")
-        v1, v2, v3 = st.columns(3)
-        with v1:
-            narrator_voice = st.selectbox("អ្នកសម្រាយរឿង", ["Edge-TTS (Piseth Pro)", "Edge-TTS (Sreymom)", "ElevenLabs Custom"], index=0)
-        with v2:
-            male_voice = st.selectbox("តួប្រុស", ["Edge-TTS (Piseth Pro)", "ElevenLabs Custom"], index=0)
-        with v3:
-            female_voice = st.selectbox("តួស្រី", ["Edge-TTS (Sreymom)", "ElevenLabs Custom"], index=0)
+        vc1, vc2, vc3 = st.columns(3)
+        with vc1:
+            st.info("🎙️ **អ្នកសម្រាយរឿង**\n\n- សំឡេង៖ ក្រាស់ច្បាស់\n- ស្ទីល៖ អន្លង់អន្លោច")
+            narrator_profile = st.selectbox("เลือก Narrator", ["Piseth Pro (ប្រុស)", "Sreymom Pro (ស្រី)"], key="n_pro")
+        with vc2:
+            st.info("🎬 **តួប្រុសក្នុងរឿង**\n\n- សំឡេង៖ ធ្ងន់អង់អាច\n- ស្ទីល៖ ធម្មជាតិ")
+            male_profile = st.selectbox("เลือก Male", ["Piseth Pro (ប្រុស)", "Sreymom Pro (ស្រី)"], key="m_pro")
+        with vc3:
+            st.info("🌸 **តួស្រីក្នុងរឿង**\n\n- សំឡេង៖ ស្រទន់ពីរោះ\n- ស្ទីល៖ រណ្ដំចិត្ត")
+            female_profile = st.selectbox("เลือก Female", ["Sreymom Pro (ស្រី)", "Piseth Pro (ប្រុស)"], key="f_pro")
 
-    with st.expander("⚙️ BGM & Subtitle Settings", expanded=False):
+    with st.expander("⚙️ Advanced Director Settings (BGM & Subtitle)", expanded=False):
         burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូផ្ទាល់", value=True)
         bgm_volume = st.slider("🎵 កម្រិតសម្លេងភ្លេងអម (BGM Volume)", min_value=0.1, max_value=1.0, value=0.4, step=0.1)
         anti_copy_audio = st.checkbox("🟢 បើកប្រព័ន្ធការពារ Copyright សម្លេង (Audio Shift)", value=True)
@@ -265,7 +266,7 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export Pro Dubbed Video (BGM + AI Voice + Subtitles)")
+        st.markdown("### 🚀 Export Pro Dubbed Video (BGM + Multi-Voices + Subtitles)")
         
         if st.button("🎬 Render Final Pro Video", use_container_width=True):
             if uploaded_file is not None:
@@ -314,49 +315,22 @@ with col_right:
                         status_text.text(f"⏳ Generating audio line #{i+1}...")
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
-                        success_audio = False
-                        
-                        # Use ElevenLabs if enabled and API key provided
-                        if use_elevenlabs and eleven_api_key:
-                            # Default ElevenLabs Voice ID (can be customized)
-                            voice_id = "21m00Tcm4TlvDq8ikWAM" # Rachel or custom ID
-                            url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-                            headers = {
-                                "Accept": "audio/mpeg",
-                                "Content-Type": "application/json",
-                                "xi-api-key": eleven_api_key
-                            }
-                            data = {
-                                "text": clean_text,
-                                "model_id": "eleven_multilingual_v2",
-                                "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}
-                            }
-                            try:
-                                res = requests.post(url, json=data, headers=headers)
-                                if res.status_code == 200:
-                                    with open(line_audio_path, 'wb') as f:
-                                        f.write(res.content)
-                                    success_audio = True
-                            except Exception:
-                                pass
-                        
-                        # Fallback to Edge-TTS if ElevenLabs is not used or fails
-                        if not success_audio:
-                            if sub["speaker"] == "តួប្រុស":
-                                voice = "km-KH-PisethNeural"
-                            elif sub["speaker"] == "តួស្រី":
-                                voice = "km-KH-SreymomNeural"
-                            else:
-                                voice = "km-KH-PisethNeural"
-                                
-                            edge_cmd = [
-                                "edge-tts",
-                                "--text", clean_text,
-                                "--voice", voice,
-                                "--rate", "+0%",
-                                "--write-media", line_audio_path
-                            ]
-                            subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        # Map selected voice profile
+                        if sub["speaker"] == "តួប្រុស":
+                            voice = "km-KH-PisethNeural" if "Piseth" in male_profile else "km-KH-SreymomNeural"
+                        elif sub["speaker"] == "តួស្រី":
+                            voice = "km-KH-SreymomNeural" if "Sreymom" in female_profile else "km-KH-PisethNeural"
+                        else:
+                            voice = "km-KH-PisethNeural" if "Piseth" in narrator_profile else "km-KH-SreymomNeural"
+                            
+                        edge_cmd = [
+                            "edge-tts",
+                            "--text", clean_text,
+                            "--voice", voice,
+                            "--rate", "+0%",
+                            "--write-media", line_audio_path
+                        ]
+                        subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         
                         if os.path.exists(line_audio_path) and os.path.getsize(line_audio_path) > 100:
                             valid_subtitles.append(sub)
@@ -371,7 +345,6 @@ with col_right:
                         filter_complex_parts = []
                         mix_inputs = []
                         
-                        # Background music extraction with custom volume and anti-copyright shift
                         bgm_filter = f"[0:a]pan=stereo|c0=c0-c1|c1=c1-c0,volume={bgm_volume}"
                         if anti_copy_audio:
                             bgm_filter += ",asetrate=44100*1.02,aresample=44100"
@@ -427,13 +400,13 @@ with col_right:
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
                             status_text.text("🎉 Video Rendering Completed Successfully!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់! ភ្លេងអម (BGM) លឺស្រទន់ៗអមជាមួយសំឡេង AI យ៉ាងច្បាស់ និងអត្ថបទរត់លើវីដេអូ។")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់! ភ្លេងអម (BGM) លឺស្រទន់ៗអមជាមួយសំឡេង AI តាមតួអង្គ និងអត្ថបទរត់លើវីដេអូ។")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
                                     label="📥 Download Pro Dubbed Video (.MP4)",
                                     data=file,
-                                    file_name="movie_time_pro_dubbed.mp4",
+                                    file_name="movie_time_multivoice.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
