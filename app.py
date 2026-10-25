@@ -2,18 +2,19 @@ import streamlit as st
 import os
 import subprocess
 import tempfile
+import requests
 import whisper
 from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Movie Time",
+    page_title="VoiceClone Studio Pro - ElevenLabs & BGM Studio",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Dark Cyberpunk & VoiceClone Pro Styling
+# Custom Dark Cyberpunk & Pro Styling
 st.markdown("""
     <style>
     .stApp {
@@ -97,11 +98,11 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| PRO AI DUBBING & SUBTITLE STUDIO</span>
+            🎙️ VOICECLONE STUDIO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| ELEVENLABS & BGM MIXING PRO</span>
         </div>
         <div class="badge-container">
-            <span class="badge-vip">❤️ Voice Library Pro</span>
-            <span class="badge-ready">🟢 Server Online | Model Ready</span>
+            <span class="badge-vip">❤️ ElevenLabs & Edge TTS</span>
+            <span class="badge-ready">🟢 BGM & Subtitle Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -118,35 +119,30 @@ with col_left:
         file_size_mb = uploaded_file.size / (1024 * 1024)
         st.success(f"📁 Loaded: {uploaded_file.name} ({file_size_mb:.2f} MB)")
     else:
-        st.info("📌 Drop your video file here (Up to 1GB).")
+        st.info("📌 Drop your video file here to extract and auto dub.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Voice Library & Studio Control Center")
+    st.markdown("### 🎛️ Voice Library & BGM Studio Control")
     
-    # Voice Library Profiles (Advanced Voice Selection similar to VoiceClone Studio Pro)
-    with st.expander("📚 Voice Library (ជ្រើសរើសសំឡេង AI តាមតួអង្គក្នុងរឿង)", expanded=True):
-        st.markdown("📌 កំណត់ម៉ូដសំឡេង AI សម្រាប់តួអង្គនីមួយៗ៖")
+    # ElevenLabs & Voice Library Configuration
+    with st.expander("🌟 ElevenLabs API & Voice Library Configuration", expanded=True):
+        use_elevenlabs = st.checkbox("🟢 ប្រើប្រាស់ ElevenLabs API (ສຳລັບសំឡេងប្រូ Clone ពីរោះខ្លាំង)", value=False)
+        eleven_api_key = st.text_input("ElevenLabs API Key:", type="password", placeholder="sk_...")
+        
+        st.markdown("📌 កំណត់ម៉ូដសំឡេង AI តាមតួអង្គ៖")
         v1, v2, v3 = st.columns(3)
         with v1:
-            narrator_profile = st.selectbox("សំឡេងអ្នកសម្រាយរឿង", [
-                "Piseth Pro (ប្រុស - ក្រាស់ច្បាស់)", 
-                "Sreymom Pro (ស្រី - ស្រទន់អន្លង់អន្លោច)"
-            ], index=0)
+            narrator_voice = st.selectbox("អ្នកសម្រាយរឿង", ["Edge-TTS (Piseth Pro)", "Edge-TTS (Sreymom)", "ElevenLabs Custom"], index=0)
         with v2:
-            male_profile = st.selectbox("សំឡេងតួប្រុស", [
-                "Piseth Pro (ប្រុស - ស្តង់ដារ)", 
-                "Sreymom Pro (ជំនួស)"
-            ], index=0)
+            male_voice = st.selectbox("តួប្រុស", ["Edge-TTS (Piseth Pro)", "ElevenLabs Custom"], index=0)
         with v3:
-            female_profile = st.selectbox("សំឡេងតួស្រី", [
-                "Sreymom Pro (ស្រី - ពីរោះរណ្ដំ)", 
-                "Piseth Pro (ជំនួស)"
-            ], index=0)
+            female_voice = st.selectbox("តួស្រី", ["Edge-TTS (Sreymom)", "ElevenLabs Custom"], index=0)
 
-    with st.expander("⚙️ Advanced Director Settings (Subtitle & BGM)", expanded=False):
+    with st.expander("⚙️ BGM & Subtitle Settings", expanded=False):
         burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូផ្ទាល់", value=True)
+        bgm_volume = st.slider("🎵 កម្រិតសម្លេងភ្លេងអម (BGM Volume)", min_value=0.1, max_value=1.0, value=0.4, step=0.1)
         anti_copy_audio = st.checkbox("🟢 បើកប្រព័ន្ធការពារ Copyright សម្លេង (Audio Shift)", value=True)
 
     if 'auto_subtitles' not in st.session_state:
@@ -245,7 +241,7 @@ with col_right:
     # Subtitles Editor Grid
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *Voice Library Script Editor: កែសម្រួលអត្ថបទ ថិរវេលា និងជ្រើសរើសតួអង្គឱ្យបានត្រឹមត្រូវ។*")
+        st.markdown("💡 *Script Editor: កែសម្រួលអត្ថបទ ថិរវេលា និងជ្រើសរើសតួអង្គឱ្យបានត្រឹមត្រូវ។*")
         
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
@@ -269,9 +265,9 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export VoiceClone Pro Video")
+        st.markdown("### 🚀 Export Pro Dubbed Video (BGM + AI Voice + Subtitles)")
         
-        if st.button("🎬 Render VoiceClone Pro Video (Subtitles + Multi-Voices + BGM)", use_container_width=True):
+        if st.button("🎬 Render Final Pro Video", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -315,26 +311,52 @@ with col_right:
                         if not clean_text or clean_text in ["。", ".", "ฯ", "?", "!"]:
                             continue
                             
-                        status_text.text(f"⏳ Generating VoiceClone audio #{i+1}...")
-                        
-                        # Apply selected voices from Voice Library
-                        if sub["speaker"] == "តួប្រុស":
-                            voice = "km-KH-PisethNeural" if "Piseth" in male_profile else "km-KH-SreymomNeural"
-                        elif sub["speaker"] == "តួស្រី":
-                            voice = "km-KH-SreymomNeural" if "Sreymom" in female_profile else "km-KH-PisethNeural"
-                        else:
-                            voice = "km-KH-PisethNeural" if "Piseth" in narrator_profile else "km-KH-SreymomNeural"
-                            
+                        status_text.text(f"⏳ Generating audio line #{i+1}...")
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
-                        edge_cmd = [
-                            "edge-tts",
-                            "--text", clean_text,
-                            "--voice", voice,
-                            "--rate", "+0%",
-                            "--write-media", line_audio_path
-                        ]
-                        subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        success_audio = False
+                        
+                        # Use ElevenLabs if enabled and API key provided
+                        if use_elevenlabs and eleven_api_key:
+                            # Default ElevenLabs Voice ID (can be customized)
+                            voice_id = "21m00Tcm4TlvDq8ikWAM" # Rachel or custom ID
+                            url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+                            headers = {
+                                "Accept": "audio/mpeg",
+                                "Content-Type": "application/json",
+                                "xi-api-key": eleven_api_key
+                            }
+                            data = {
+                                "text": clean_text,
+                                "model_id": "eleven_multilingual_v2",
+                                "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}
+                            }
+                            try:
+                                res = requests.post(url, json=data, headers=headers)
+                                if res.status_code == 200:
+                                    with open(line_audio_path, 'wb') as f:
+                                        f.write(res.content)
+                                    success_audio = True
+                            except Exception:
+                                pass
+                        
+                        # Fallback to Edge-TTS if ElevenLabs is not used or fails
+                        if not success_audio:
+                            if sub["speaker"] == "តួប្រុស":
+                                voice = "km-KH-PisethNeural"
+                            elif sub["speaker"] == "តួស្រី":
+                                voice = "km-KH-SreymomNeural"
+                            else:
+                                voice = "km-KH-PisethNeural"
+                                
+                            edge_cmd = [
+                                "edge-tts",
+                                "--text", clean_text,
+                                "--voice", voice,
+                                "--rate", "+0%",
+                                "--write-media", line_audio_path
+                            ]
+                            subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         
                         if os.path.exists(line_audio_path) and os.path.getsize(line_audio_path) > 100:
                             valid_subtitles.append(sub)
@@ -342,14 +364,15 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Mixing audio tracks and rendering via FFmpeg...")
+                        status_text.text("⏳ Mixing Background Music (BGM) with AI Voices via FFmpeg...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
                         filter_complex_parts = []
                         mix_inputs = []
                         
-                        bgm_filter = "[0:a]pan=stereo|c0=c0-c1|c1=c1-c0,volume=0.4"
+                        # Background music extraction with custom volume and anti-copyright shift
+                        bgm_filter = f"[0:a]pan=stereo|c0=c0-c1|c1=c1-c0,volume={bgm_volume}"
                         if anti_copy_audio:
                             bgm_filter += ",asetrate=44100*1.02,aresample=44100"
                         bgm_filter += "[bgm]"
@@ -403,14 +426,14 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 VoiceClone Pro Rendering Completed!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់ដោយជោគជ័យជាមួយ Voice Library និង Multi-Voices Studio Pro!")
+                            status_text.text("🎉 Video Rendering Completed Successfully!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់! ភ្លេងអម (BGM) លឺស្រទន់ៗអមជាមួយសំឡេង AI យ៉ាងច្បាស់ និងអត្ថបទរត់លើវីដេអូ។")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
-                                    label="📥 Download VoiceClone Pro Video (.MP4)",
+                                    label="📥 Download Pro Dubbed Video (.MP4)",
                                     data=file,
-                                    file_name="voiceclone_studio_pro.mp4",
+                                    file_name="movie_time_pro_dubbed.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
