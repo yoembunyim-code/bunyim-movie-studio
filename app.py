@@ -7,7 +7,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Multi-Voice Studio",
+    page_title="VoiceClone Studio Pro - Preview & BGM Master",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -97,23 +97,21 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| PROFESSIONAL CHINESE MOVIE RECAP STUDIO</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AUDIO PREVIEW & ROLE MAPPING STUDIO</span>
         </div>
         <div class="badge-container">
-            <span class="badge-vip">❤️ 6 Pro AI Voices</span>
+            <span class="badge-vip">❤️ Multi-Voice Preview</span>
             <span class="badge-ready">🟢 1GB Video Support Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
 
-# Define 6 Professional Voice Profiles (Mapping to Edge-KH neural voices with tone variations)
 VOICE_PROFILES = {
-    "Piseth Pro (ប្រុស - ក្រាស់ច្បាស់ សម្រាយរឿង)": "km-KH-PisethNeural",
-    "Sreymom Pro (ស្រី - ស្រទន់អន្លង់អន្លោច)": "km-KH-SreymomNeural",
-    "Chandara Pro (ប្រុស - ធ្ងន់អង់អាច តួឯក)": "km-KH-PisethNeural",
-    "Bopha Pro (ស្រី - ពីរោះរណ្ដំ តួឯកស្រី)": "km-KH-SreymomNeural",
-    "Vichea Pro (ប្រុស - មាំទាំ តួអង្គរង)": "km-KH-PisethNeural",
-    "Chenda Pro (ស្រី - ស្រួយស្រទន់ តួអង្គរង)": "km-KH-SreymomNeural"
+    "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច)": ("km-KH-PisethNeural", "+0Hz"),
+    "តួប្រុស (សំឡេងប្រុសធ្ងន់ច្បាស់)": ("km-KH-PisethNeural", "-2Hz"),
+    "តួស្រី (សំឡេងស្រីស្រទន់ពីរោះ)": ("km-KH-SreymomNeural", "+2Hz"),
+    "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំ)": ("km-KH-PisethNeural", "-5Hz"),
+    "តួអង្គរងផ្សេងៗ": ("km-KH-SreymomNeural", "+0Hz")
 }
 
 col_left, col_right = st.columns([1.1, 1.9])
@@ -133,47 +131,55 @@ with col_left:
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Voice Library & Professional Studio Control")
+    st.markdown("### 🎛️ Voice Library & Interactive Audio Preview")
     
-    # Professional 6 Voice Profiles Library Selection & Preview
-    with st.expander("📚 Pro Voice Library (ជ្រើសរើសសំឡេងទាំង ៦ បែបស្ទីលរឿងចិន)", expanded=True):
-        st.markdown("📌 កំណត់ម៉ូដសំឡេង AI សម្រាប់តួអង្គនីមួយៗ និងអាចចុចស្តាប់មើលសិនបាន៖")
+    with st.expander("📚 Character Voice Library & Preview (ស្តាប់សំឡេងគំរូតាមតួអង្គ)", expanded=True):
+        st.markdown("📌 កំណត់ម៉ូដសំឡេង និងចុចស្តាប់សំឡេងគំរូនៃតួអង្គនីមួយៗ៖")
         
         voice_keys = list(VOICE_PROFILES.keys())
         
-        v1, v2, v3 = st.columns(3)
+        v1, v2 = st.columns(2)
         with v1:
             narrator_profile = st.selectbox("សំឡេងអ្នកសម្រាយរឿង", voice_keys, index=0)
+            if st.button("🔊 ស្តាប់សំឡេង: អ្នកសម្រាយ"):
+                sample_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                v_code, v_pitch = VOICE_PROFILES[narrator_profile]
+                subprocess.run(["edge-tts", "--text", "សួស្តី! នេះគឺជាសំឡេងអ្នកសម្រាយរឿងប្រកបដោយវិជ្ជាជីវៈ។", "--voice", v_code, "--pitch", v_pitch, "--write-media", sample_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if os.path.exists(sample_path):
+                    st.audio(sample_path, format="audio/mp3")
+
+            male_profile = st.selectbox("សំឡេងតួប្រុស", voice_keys, index=1)
+            if st.button("🔊 ស្តាប់សំឡេង: តួប្រុស"):
+                sample_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                v_code, v_pitch = VOICE_PROFILES[male_profile]
+                subprocess.run(["edge-tts", "--text", "ហ៊ានតតាំងជាមួយយើងហ្ហេស! មើលមុខគ្នាផង។", "--voice", v_code, "--pitch", v_pitch, "--write-media", sample_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if os.path.exists(sample_path):
+                    st.audio(sample_path, format="audio/mp3")
+
         with v2:
-            male_profile = st.selectbox("សំឡេងតួប្រុសឯក", voice_keys, index=2)
-        with v3:
-            female_profile = st.selectbox("សំឡេងតួស្រីឯក", voice_keys, index=3)
-            
-        v4, v5 = st.columns(2)
-        with v4:
-            sub_male_profile = st.selectbox("សំឡេងតួប្រុសងាប់/រង", voice_keys, index=4)
-        with v5:
-            sub_female_profile = st.selectbox("សំឡេងតួស្រីរង", voice_keys, index=5)
+            female_profile = st.selectbox("សំឡេងតួស្រី", voice_keys, index=2)
+            if st.button("🔊 ស្តាប់សំឡេង: តួស្រី"):
+                sample_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                v_code, v_pitch = VOICE_PROFILES[female_profile]
+                subprocess.run(["edge-tts", "--text", "ចាស៎បង! កុំបារម្ភអី អូននៅទីនេះស្រាប់ហើយ។", "--voice", v_code, "--pitch", v_pitch, "--write-media", sample_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if os.path.exists(sample_path):
+                    st.audio(sample_path, format="audio/mp3")
 
-        # Preview Voice Audio Generator Button
-        if st.button("🔊 ចុចស្តាប់សំឡេងគំរូ (Preview Sample Voice)", use_container_width=False):
-            sample_text = "សួស្តី! នេះគឺជាការពិសោធន៍សំឡេង AI ស្ទីលរឿងចិនប្រកបដោយវិជ្ជាជីវៈ។"
-            sample_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-            preview_voice_code = VOICE_PROFILES[narrator_profile]
-            
-            preview_cmd = [
-                "edge-tts",
-                "--text", sample_text,
-                "--voice", preview_voice_code,
-                "--write-media", sample_audio_path
-            ]
-            subprocess.run(preview_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if os.path.exists(sample_audio_path):
-                st.audio(sample_audio_path, format="audio/mp3")
+            elder_profile = st.selectbox("សំឡេងតួចាស់/ព្រឹទ្ធាចារ្យ", voice_keys, index=3)
+            if st.button("🔊 ស្តាប់សំឡេង: តួចាស់"):
+                sample_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                v_code, v_pitch = VOICE_PROFILES[elder_profile]
+                subprocess.run(["edge-tts", "--text", "កាលពីសម័យបុរាណ រឿងរ៉ាវមិនមែនបែបនេះទេចៅអើយ។", "--voice", v_code, "--pitch", v_pitch, "--write-media", sample_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if os.path.exists(sample_path):
+                    st.audio(sample_path, format="audio/mp3")
 
-    with st.expander("⚙️ Advanced Director Settings (BGM & Subtitle)", expanded=False):
+        other_profile = st.selectbox("សំឡេងតួអង្គរងផ្សេងៗ", voice_keys, index=4)
+
+    with st.expander("⚙️ Advanced Director Settings (BGM & Volume Balance)", expanded=False):
         burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូផ្ទាល់", value=True)
-        bgm_volume = st.slider("🎵 កម្រិតសម្លេងភ្លេងអម (BGM Volume)", min_value=0.1, max_value=1.0, value=0.4, step=0.1)
+        suppress_original = st.checkbox("🟢 បន្ថយសំឡេងដើមវីដេអូ (Mute Original Voices)", value=True)
+        bgm_volume = st.slider("🎵 កម្រិតសម្លេងភ្លេងអម BGM (Volume)", min_value=0.1, max_value=1.5, value=0.6, step=0.1)
+        voice_volume = st.slider("🗣️ កម្រិតសំឡេង AI និយាយ (Voice Volume)", min_value=1.0, max_value=3.0, value=1.5, step=0.1)
         anti_copy_audio = st.checkbox("🟢 បើកប្រព័ន្ធការពារ Copyright សម្លេង (Audio Shift)", value=True)
 
     if 'auto_subtitles' not in st.session_state:
@@ -269,12 +275,11 @@ with col_right:
         st.success("✅ Force Translation Finished!")
         st.rerun()
 
-    # Subtitles Editor Grid with 6 Roles Support
     if st.session_state.auto_subtitles:
         st.markdown("---")
         st.markdown("💡 *Script Editor: កែសម្រួលអត្ថបទ ថិរវេលា និងជ្រើសរើសតួអង្គឱ្យបានត្រឹមត្រូវ។*")
         
-        role_options = ["អ្នកសម្រាយរឿង", "តួប្រុសឯក", "តួស្រីឯក", "តួប្រុសរង", "តួស្រីរង"]
+        role_options = ["អ្នកសម្រាយរឿង", "តួប្រុស", "តួស្រី", "តួចាស់/ព្រឹទ្ធាចារ្យ", "តួអង្គរងផ្សេងៗ"]
         
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
@@ -301,9 +306,9 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export Pro Chinese Movie Recap Video")
+        st.markdown("### 🚀 Export Previewed Pro Video")
         
-        if st.button("🎬 Render Final Pro Video (BGM + 6 AI Voices + Subtitles)", use_container_width=True):
+        if st.button("🎬 Render Final Pro Video with Previewed Voices", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -347,29 +352,29 @@ with col_right:
                         if not clean_text or clean_text in ["。", ".", "ฯ", "?", "!"]:
                             continue
                             
-                        status_text.text(f"⏳ Generating pro audio line #{i+1}...")
+                        status_text.text(f"⏳ Generating audio line #{i+1}...")
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
-                        # Map role to selected profile from 6 voices
                         role = sub.get("speaker", "អ្នកសម្រាយរឿង")
-                        if role == "តួប្រុសឯក":
-                            selected_profile_name = male_profile
-                        elif role == "តួស្រីឯក":
-                            selected_profile_name = female_profile
-                        elif role == "តួប្រុសរង":
-                            selected_profile_name = sub_male_profile
-                        elif role == "តួស្រីរង":
-                            selected_profile_name = sub_female_profile
+                        if role == "តួប្រុស":
+                            v_name = male_profile
+                        elif role == "តួស្រី":
+                            v_name = female_profile
+                        elif role == "តួចាស់/ព្រឹទ្ធាចារ្យ":
+                            v_name = elder_profile
+                        elif role == "តួអង្គរងផ្សេងៗ":
+                            v_name = other_profile
                         else:
-                            selected_profile_name = narrator_profile
+                            v_name = narrator_profile
                             
-                        voice = VOICE_PROFILES.get(selected_profile_name, "km-KH-PisethNeural")
+                        voice, voice_pitch = VOICE_PROFILES.get(v_name, ("km-KH-PisethNeural", "+0Hz"))
                             
                         edge_cmd = [
                             "edge-tts",
                             "--text", clean_text,
                             "--voice", voice,
                             "--rate", "+0%",
+                            "--pitch", voice_pitch,
                             "--write-media", line_audio_path
                         ]
                         subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -380,14 +385,15 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Mixing Background Music (BGM) with Multi-AI Voices via FFmpeg...")
+                        status_text.text("⏳ Mixing BGM and Character Voices via FFmpeg...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
                         filter_complex_parts = []
                         mix_inputs = []
                         
-                        bgm_filter = f"[0:a]pan=stereo|c0=c0-c1|c1=c1-c0,volume={bgm_volume}"
+                        orig_vol = "0.05" if suppress_original else "0.2"
+                        bgm_filter = f"[0:a]volume={orig_vol}[orig]; [orig]pan=stereo|c0=c0|c1=c1,volume={bgm_volume}"
                         if anti_copy_audio:
                             bgm_filter += ",asetrate=44100*1.02,aresample=44100"
                         bgm_filter += "[bgm]"
@@ -407,9 +413,9 @@ with col_right:
                             
                             stream_idx = idx + 1
                             if speed_factor != 1.0:
-                                filter_complex_parts.append(f"[{stream_idx}:a]volume=2.0,atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
+                                filter_complex_parts.append(f"[{stream_idx}:a]volume={voice_volume},atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
                             else:
-                                filter_complex_parts.append(f"[{stream_idx}:a]volume=2.0,adelay={delay_ms}|{delay_ms}[a{idx}]")
+                                filter_complex_parts.append(f"[{stream_idx}:a]volume={voice_volume},adelay={delay_ms}|{delay_ms}[a{idx}]")
                                 
                             mix_inputs.append(f"[a{idx}]")
                         
@@ -441,14 +447,14 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Professional Video Rendering Completed!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់! ភ្លេងអម (BGM) លឺស្រទន់ៗអមជាមួយសំឡេង AI ទាំង ៦ បែប និងអត្ថបទរត់លើវីដេអូយ៉ាងស្រស់ស្អាត។")
+                            status_text.text("🎉 Final Pro Rendering Completed!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់! សំឡេងតួប្រុស តួស្រី តួចាស់ ព្រមទាំងប៊ូតុងស្តាប់សំឡេងគំរូ និងភ្លេងអមដំណើរការយ៉ាងល្អឥតខ្ចោះ។")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
-                                    label="📥 Download Pro Recapped Video (.MP4)",
+                                    label="📥 Download Final Pro Video (.MP4)",
                                     data=file,
-                                    file_name="chinese_movie_pro_recap.mp4",
+                                    file_name="final_pro_movie_recap.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
