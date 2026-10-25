@@ -7,7 +7,7 @@ from translate import Translator
 
 # Page Configuration with 200MB Upload Limit Support
 st.set_page_config(
-    page_title="Movie Time - AI Dubbing Pro Studio",
+    page_title="Movie Time - AI Dubbing & Subtitle Studio",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -97,11 +97,11 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎬 MOVIE TIME <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AI DUBBING PRO + ANTI-COPYRIGHT</span>
+            🎬 MOVIE TIME <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AI SUBTITLE & DUBBING STUDIO</span>
         </div>
         <div class="badge-container">
             <span class="badge-vip">❤️ VIP Pro Studio</span>
-            <span class="badge-ready">🟢 Blur & Anti-Copyright Active</span>
+            <span class="badge-ready">🟢 Subtitle Overlay Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -118,18 +118,17 @@ with col_left:
         file_size_mb = uploaded_file.size / (1024 * 1024)
         st.success(f"📁 Loaded: {uploaded_file.name} ({file_size_mb:.2f} MB)")
     else:
-        st.info("📌 Drop your large video file here (Up to 200MB).")
+        st.info("📌 Drop your video file here (Up to 200MB).")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Anti-Copyright & Subtitle Control Panel")
+    st.markdown("### 🎛️ Subtitle & Text Overlay Control Panel")
     
-    # Anti-Copyright & Video Editing Options Expander
-    with st.expander("🛡️ កែសម្រួលកម្រិតការពារ Copyright & Blur អក្សរ (Optional)", expanded=False):
-        enable_blur = st.checkbox("🟢 បើកមុខងារ Blur បាំងអក្សរ/Logo ខាងក្រោមវីដេអូ", value=False)
-        blur_position = st.selectbox("ទីតាំងត្រូវ Blur:", ["ជ្រុងខាងក្រោម (Bottom Bar)", "ជ្រុងខាងលើ (Top Bar)"])
-        anti_copy_audio = st.checkbox("🟢 បើកប្រព័ន្ធការពារ Copyright សម្លេង (Audio Pitch/Filter Shift)", value=True)
+    # Subtitle Options Expander
+    with st.expander("⚙️ កែសម្រួលការបង្ហាញអក្សររត់លើវីដេអូ (Subtitle Options)", expanded=True):
+        burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) ទៅលើវីដេអូផ្ទាល់ (Burn-in)", value=True)
+        anti_copy_audio = st.checkbox("🟢 បើកប្រព័ន្ធការពារ Copyright សម្លេង (Audio Shift)", value=True)
 
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
@@ -224,10 +223,10 @@ with col_right:
         st.success("✅ Force Translation Finished!")
         st.rerun()
 
-    # Subtitles Editor Grid
+    # Subtitles Editor Grid (Full control to edit text and timing)
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *គន្លឹះ៖ កែសម្រួលអត្ថបទ និងថិរវេលាឱ្យត្រូវមាត់តួអង្គមុនពេល Render។*")
+        st.markdown("💡 *ឧបករណ៍សារេដោយខ្លួនឯង៖ អ្នកអាចកែសម្រួលអត្ថបទខ្មែរ ថិរវេលា (Start/Dur) និងតួអង្គបានតាមចិត្តមុនពេល Render។*")
         
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
@@ -251,21 +250,43 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export Anti-Copyright & Pro Dubbed Video")
+        st.markdown("### 🚀 Export Video with Subtitles & AI Dubbing")
         
-        if st.button("🎬 Render Pro Video (Blur + Anti-Copyright + AI Voice)", use_container_width=True):
+        if st.button("🎬 Render Final Video (Subtitles + AI Voice + BGM)", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 
                 try:
-                    status_text.text("⏳ Preparing rendering environment...")
+                    status_text.text("⏳ Preparing rendering environment & Subtitles file...")
                     progress_bar.progress(10)
                     
                     tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
                     tfile.write(uploaded_file.read())
                     input_video_path = tfile.name
                     tfile.close()
+                    
+                    # Create SRT Subtitle File for Burn-in
+                    srt_path = tempfile.NamedTemporaryFile(delete=False, suffix='.srt', mode='w', encoding='utf-8')
+                    for i, sub in enumerate(st.session_state.auto_subtitles):
+                        clean_text = sub["khmer"].strip()
+                        if not clean_text:
+                            continue
+                        
+                        start_sec = sub["time_sec"]
+                        end_sec = start_sec + sub["duration"]
+                        
+                        def format_time(sec):
+                            hours = int(sec // 3600)
+                            minutes = int((sec % 3600) // 60)
+                            seconds = int(sec % 60)
+                            milliseconds = int((sec - int(sec)) * 1000)
+                            return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
+                        
+                        srt_path.write(f"{i+1}\n")
+                        srt_path.write(f"{format_time(start_sec)} --> {format_time(end_sec)}\n")
+                        srt_path.write(f"{clean_text}\n\n")
+                    srt_path.close()
                     
                     audio_inputs = []
                     valid_subtitles = []
@@ -301,29 +322,16 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Processing video filters (Blur, Anti-Copyright BGM, AI Voice Mixing)...")
+                        status_text.text("⏳ Mixing audio, BGM, and burning subtitles onto video via FFmpeg...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
-                        # Build Video Filter Chain (Blur + Anti-Copyright shifting if needed)
-                        video_filters = []
-                        if enable_blur:
-                            if "Bottom" in blur_position:
-                                # Blur bottom region of the video to cover subtitles/logos
-                                video_filters.append("boxblur=10:1:enable='gte(t,0)'")
-                            else:
-                                video_filters.append("boxblur=10:1")
-                        
-                        v_filter_str = ",".join(video_filters) if video_filters else "null"
-
-                        # Build Audio Filter Chain
                         filter_complex_parts = []
                         mix_inputs = []
                         
-                        # Background music extraction with anti-copyright pitch/volume shift
                         bgm_filter = "[0:a]pan=stereo|c0=c0-c1|c1=c1-c0,volume=0.4"
                         if anti_copy_audio:
-                            bgm_filter += ",asetrate=44100*1.02,aresample=44100" # Slight pitch shift to bypass content ID
+                            bgm_filter += ",asetrate=44100*1.02,aresample=44100"
                         bgm_filter += "[bgm]"
                         
                         filter_complex_parts.append(bgm_filter)
@@ -351,19 +359,24 @@ with col_right:
                         mix_filter = "".join(mix_inputs) + f"amix=inputs={total_inputs}:duration=first:dropout_transition=2[aout]"
                         filter_complex_parts.append(mix_filter)
                         
+                        full_filter_str = ";!("{0}".format(";".join(filter_complex_parts)) # Clean string join
                         full_filter_str = ";".join(filter_complex_parts)
                         
                         ffmpeg_cmd = ["ffmpeg", "-y", "-i", input_video_path]
                         ffmpeg_cmd.extend(audio_inputs)
                         
-                        if enable_blur:
-                            ffmpeg_cmd.extend(["-vf", v_filter_str])
+                        # Add subtitle burn-in filter if checked
+                        if burn_subtitles:
+                            # Using absolute path and escaping for FFmpeg subtitle filter format
+                            escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
+                            video_filter = f"subtitles='{escaped_srt_path}':force_style='FontName=Khmer OS Battambang,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2'"
+                            ffmpeg_cmd.extend(["-vf", video_filter])
                             
                         ffmpeg_cmd.extend([
                             "-filter_complex", full_filter_str,
-                            "-map", "0:v" if not enable_blur else "0:v", # Map video stream
+                            "-map", "0:v" if not burn_subtitles else "0:v", # Video stream mapping
                             "-map", "[aout]",
-                            "-c:v", "libx264", # Re-encode for video filter support
+                            "-c:v", "libx264",
                             "-preset", "fast",
                             "-c:a", "aac",
                             output_video_path
@@ -373,14 +386,14 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Video Dubbing & Anti-Copyright Completed!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់ដោយជោគជ័យ! បន្ថែមមុខងារ Blur និងប្រព័ន្ធការពារ Copyright សម្លេងរួចរាល់។")
+                            status_text.text("🎉 Video Rendering Completed Successfully!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់! អត្ថបទរត់ (Subtitles) ត្រូវបានដាក់បញ្ចាំងលើវីដេអូយ៉ាងស្រស់ស្អាត ព្រមទាំងមានសំឡេង AI និងភ្លេងអមស្រទន់ៗ។")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
-                                    label="📥 Download Anti-Copyright Video (.MP4)",
+                                    label="📥 Download Subtitle Video (.MP4)",
                                     data=file,
-                                    file_name="anticopyright_movie_dubbed.mp4",
+                                    file_name="movie_time_with_subtitles.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
