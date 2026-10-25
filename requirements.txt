@@ -2,3 +2,7 @@ streamlit
 edge-tts
 openai-whisper
 translate
+whisper
+translate
+numpy
+scipy
