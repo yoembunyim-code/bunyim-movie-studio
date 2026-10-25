@@ -186,14 +186,10 @@ with col_right:
             if len(segment) == 0:
                 return "អ្នកសម្រាយរឿង"
                 
-            # Perform FFT Frequency Analysis
             fft_spectrum = np.abs(np.fft.rfft(segment))
             freqs = np.fft.rfftfreq(len(segment), d=1.0/rate)
-            
-            # Find dominant fundamental frequency
             peak_freq = freqs[np.argmax(fft_spectrum)]
             
-            # Classify gender/age based on Pitch Frequency (Hz)
             if peak_freq > 185:
                 return "តួស្រី"
             elif 90 <= peak_freq <= 140:
@@ -225,7 +221,6 @@ with col_right:
                 audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                 wav_path = tempfile.NamedTemporaryFile(delete=False, suffix='.wav').name
                 
-                # Extract both MP3 and WAV for AI Pitch Analysis
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-ar", "16000", "-ac", "1", wav_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
@@ -235,7 +230,7 @@ with col_right:
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
                 
-                status_text.text("⏳ Analyzing Audio Pitch & Detecting Characters (Male, Female, Elder)...")
+                status_text.text("⏳ Analyzing Audio Pitch & Detecting Characters...")
                 progress_bar.progress(85)
                 
                 translator = Translator(to_lang="km")
@@ -255,7 +250,6 @@ with col_right:
                         except Exception:
                             pass
                     
-                    # AI Auto Pitch Analysis to detect role automatically
                     detected_role = analyze_audio_pitch(wav_path, start_time, duration)
                             
                     st.session_state.auto_subtitles.append({
@@ -267,7 +261,7 @@ with col_right:
                 
                 progress_bar.progress(100)
                 status_text.text("🎉 AI Auto Pitch Analysis & Diarization Complete!")
-                st.success("✅ ប្រព័ន្ធ AI បានវិភាគសម្លេងក្នុងវីដេអូ និងបែងចែកតួអង្គ (ប្រុស ស្រី ចាស់) ដោយស្វ័យប្រវត្តិរួចរាល់!")
+                st.success("✅ ប្រព័ន្ធ AI បានវិភាគសម្លេងក្នុងវីដេអូ និងបែងចែកតួអង្គដោយស្វ័យប្រវត្តិរួចរាល់!")
                 st.rerun()
                 
             except Exception as e:
@@ -291,7 +285,7 @@ with col_right:
 
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *Script Editor: AI បានចាប់សំឡេងតួអង្គដោយស្វ័យប្រវត្តិពីវីដេអូ។ អ្នកអាចកែសម្រួលបន្ថែមបានប្រសិនបើត្រូវការ។*")
+        st.markdown("💡 *Script Editor: AI បានចាប់សំឡេងតួអង្គដោយស្វ័យប្រវត្តិពីវីដេអូ។*")
         
         role_options = ["អ្នកសម្រាយរឿង", "តួប្រុស", "តួស្រី", "តួចាស់/ព្រឹទ្ធាចារ្យ", "តួអង្គរងផ្សេងៗ"]
         
@@ -336,7 +330,6 @@ with col_right:
                     input_video_path = tfile.name
                     tfile.close()
                     
-                    # Create SRT Subtitle File
                     srt_path = tempfile.NamedTemporaryFile(delete=False, suffix='.srt', mode='w', encoding='utf-8')
                     for i, sub in enumerate(st.session_state.auto_subtitles):
                         clean_text = sub["khmer"].strip()
@@ -363,7 +356,7 @@ with col_right:
                     
                     for i, sub in enumerate(st.session_state.auto_subtitles):
                         clean_text = sub["khmer"].strip()
-                        if not clean_text or clean_text in [" clean_text in ["?", "!", ""]:
+                        if not clean_text or clean_text in ["?", "!", ""]:
                             continue
                             
                         status_text.text(f"⏳ Generating AI audio for auto-detected role #{i+1}...")
@@ -462,7 +455,7 @@ with col_right:
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
                             status_text.text("🎉 AI Diarization Rendering Completed!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់! ប្រព័ន្ធបានចាប់ និងបែងចែកសំឡេងតួអង្គ (ប្រុស ស្រី ចាស់) ដោយស្វ័យប្រវត្តតាមប្រេកង់ (Pitch Frequency) នៃវីដេអូដើម។")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់! ប្រព័ន្ធ AI បានចាប់តួអង្គដោយស្វ័យប្រវត្តិ។")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
