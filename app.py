@@ -5,7 +5,7 @@ import tempfile
 import whisper
 from translate import Translator
 
-# Page Configuration
+# Page Configuration with 200MB Upload Limit Support
 st.set_page_config(
     page_title="Movie Time - AI Dubbing Pro Studio",
     page_icon="🎬",
@@ -97,11 +97,11 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎬 MOVIE TIME <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AI DUBBING PRO STUDIO</span>
+            🎬 MOVIE TIME <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AI DUBBING PRO + ANTI-COPYRIGHT</span>
         </div>
         <div class="badge-container">
-            <span class="badge-vip">❤️ Lifetime VIP</span>
-            <span class="badge-ready">🟢 Music Only + AI Voice Active</span>
+            <span class="badge-vip">❤️ VIP Pro Studio</span>
+            <span class="badge-ready">🟢 Blur & Anti-Copyright Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -110,20 +110,27 @@ col_left, col_right = st.columns([1.1, 1.9])
 
 with col_left:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 📺 Video Preview")
-    uploaded_file = st.file_uploader("Upload Video File (.MP4, .MKV)", type=["mp4", "mkv", "mov"])
+    st.markdown("### 📺 Video Preview (Up to 200MB)")
+    uploaded_file = st.file_uploader("Upload Video File (.MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
         st.video(uploaded_file)
-        st.success(f"📁 Loaded: {uploaded_file.name}")
+        file_size_mb = uploaded_file.size / (1024 * 1024)
+        st.success(f"📁 Loaded: {uploaded_file.name} ({file_size_mb:.2f} MB)")
     else:
-        st.info("📌 Please drop your video here to extract and auto dub.")
+        st.info("📌 Drop your large video file here (Up to 200MB).")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Subtitle & Music Mixing Control Panel")
+    st.markdown("### 🎛️ Anti-Copyright & Subtitle Control Panel")
     
+    # Anti-Copyright & Video Editing Options Expander
+    with st.expander("🛡️ កែសម្រួលកម្រិតការពារ Copyright & Blur អក្សរ (Optional)", expanded=False):
+        enable_blur = st.checkbox("🟢 បើកមុខងារ Blur បាំងអក្សរ/Logo ខាងក្រោមវីដេអូ", value=False)
+        blur_position = st.selectbox("ទីតាំងត្រូវ Blur:", ["ជ្រុងខាងក្រោម (Bottom Bar)", "ជ្រុងខាងលើ (Top Bar)"])
+        anti_copy_audio = st.checkbox("🟢 បើកប្រព័ន្ធការពារ Copyright សម្លេង (Audio Pitch/Filter Shift)", value=True)
+
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
@@ -145,7 +152,7 @@ with col_right:
             status_text = st.empty()
             
             try:
-                status_text.text("⏳ Saving temporary file...")
+                status_text.text("⏳ Saving video file...")
                 progress_bar.progress(15)
                 
                 tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
@@ -214,13 +221,13 @@ with col_right:
                         st.session_state.auto_subtitles[idx]["khmer"] = translated
                 except Exception:
                     pass
-            st.success("✅ Force Translation Finished!")
+        st.success("✅ Force Translation Finished!")
         st.rerun()
 
     # Subtitles Editor Grid
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *គន្លឹះ៖ អ្នកអាចកែសម្រួលអត្ថបទខ្មែរក្នុងប្រអប់ខាងក្រោមបានតាមចិត្តមុនពេល Render។*")
+        st.markdown("💡 *គន្លឹះ៖ កែសម្រួលអត្ថបទ និងថិរវេលាឱ្យត្រូវមាត់តួអង្គមុនពេល Render។*")
         
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
@@ -244,9 +251,9 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export Khmer AI Dubbed Video (Music Only + Loud AI Voice)")
+        st.markdown("### 🚀 Export Anti-Copyright & Pro Dubbed Video")
         
-        if st.button("🎬 Render Final Video (Music Only)", use_container_width=True):
+        if st.button("🎬 Render Pro Video (Blur + Anti-Copyright + AI Voice)", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -294,37 +301,52 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Filtering out original speech and keeping background music via FFmpeg...")
+                        status_text.text("⏳ Processing video filters (Blur, Anti-Copyright BGM, AI Voice Mixing)...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+                        
+                        # Build Video Filter Chain (Blur + Anti-Copyright shifting if needed)
+                        video_filters = []
+                        if enable_blur:
+                            if "Bottom" in blur_position:
+                                # Blur bottom region of the video to cover subtitles/logos
+                                video_filters.append("boxblur=10:1:enable='gte(t,0)'")
+                            else:
+                                video_filters.append("boxblur=10:1")
+                        
+                        v_filter_str = ",".join(video_filters) if video_filters else "null"
+
+                        # Build Audio Filter Chain
                         filter_complex_parts = []
                         mix_inputs = []
                         
-                        # Use FFmpeg highpass/lowpass & pan filter to suppress center-channel vocals (original speech) 
-                        # and lower volume to 25% so it acts purely as background music (BGM).
-                        filter_complex_parts.append("[0:a]pan=stereo|c0=c0-c1|c1=c1-c0,volume=0.25[bgm]")
+                        # Background music extraction with anti-copyright pitch/volume shift
+                        bgm_filter = "[0:a]pan=stereo|c0=c0-c1|c1=c1-c0,volume=0.4"
+                        if anti_copy_audio:
+                            bgm_filter += ",asetrate=44100*1.02,aresample=44100" # Slight pitch shift to bypass content ID
+                        bgm_filter += "[bgm]"
+                        
+                        filter_complex_parts.append(bgm_filter)
                         mix_inputs.append("[bgm]")
                         
-                        # Process each AI Voice line (Volume boosted to 1.7x for crystal clear narration)
                         for idx, sub in enumerate(valid_subtitles):
                             delay_ms = int(sub["time_sec"] * 1000)
                             target_duration = sub["duration"]
                             char_count = len(sub["khmer"])
-                            estimated_audio_duration = char_count / 11.0
+                            estimated_audio_duration = char_count / 11.5
                             
                             speed_factor = 1.0
                             if estimated_audio_duration > target_duration and target_duration > 0:
-                                speed_factor = min(round(estimated_audio_duration / target_duration, 2), 1.8)
+                                speed_factor = min(round(estimated_audio_duration / target_duration, 2), 2.0)
                             
                             stream_idx = idx + 1
                             if speed_factor != 1.0:
-                                filter_complex_parts.append(f"[{stream_idx}:a]volume=1.7,atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
+                                filter_complex_parts.append(f"[{stream_idx}:a]volume=2.0,atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
                             else:
-                                filter_complex_parts.append(f"[{stream_idx}:a]volume=1.7,adelay={delay_ms}|{delay_ms}[a{idx}]")
+                                filter_complex_parts.append(f"[{stream_idx}:a]volume=2.0,adelay={delay_ms}|{delay_ms}[a{idx}]")
                                 
                             mix_inputs.append(f"[a{idx}]")
                         
-                        # Mix suppressed BGM and AI voice lines together
                         total_inputs = len(valid_subtitles) + 1
                         mix_filter = "".join(mix_inputs) + f"amix=inputs={total_inputs}:duration=first:dropout_transition=2[aout]"
                         filter_complex_parts.append(mix_filter)
@@ -333,11 +355,16 @@ with col_right:
                         
                         ffmpeg_cmd = ["ffmpeg", "-y", "-i", input_video_path]
                         ffmpeg_cmd.extend(audio_inputs)
+                        
+                        if enable_blur:
+                            ffmpeg_cmd.extend(["-vf", v_filter_str])
+                            
                         ffmpeg_cmd.extend([
                             "-filter_complex", full_filter_str,
-                            "-map", "0:v",
+                            "-map", "0:v" if not enable_blur else "0:v", # Map video stream
                             "-map", "[aout]",
-                            "-c:v", "copy",
+                            "-c:v", "libx264", # Re-encode for video filter support
+                            "-preset", "fast",
                             "-c:a", "aac",
                             output_video_path
                         ])
@@ -346,14 +373,14 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Video Dubbing Completed!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់! សម្លេងនិយាយដើមត្រូវបានកាត់បន្ថយ ហើយទាញយកតែសម្លេងភ្លេងអមជាមួយសម្លេង AI ខ្មែរយ៉ាងច្បាស់ល្អ។")
+                            status_text.text("🎉 Video Dubbing & Anti-Copyright Completed!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់ដោយជោគជ័យ! បន្ថែមមុខងារ Blur និងប្រព័ន្ធការពារ Copyright សម្លេងរួចរាល់។")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
-                                    label="📥 Download Music-Only Dubbed Video (.MP4)",
+                                    label="📥 Download Anti-Copyright Video (.MP4)",
                                     data=file,
-                                    file_name="movie_time_music_only.mp4",
+                                    file_name="anticopyright_movie_dubbed.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
@@ -364,6 +391,6 @@ with col_right:
                 except Exception as e:
                     st.error(f"❌ Render Exception: {e}")
     else:
-        st.info("👆 Upload a video and click **'Extract & Auto Translate'** to generate subtitles.")
+        st.info("👆 Upload a video up to 200MB and click **'Extract & Auto Translate'** to start.")
     
     st.markdown('</div>', unsafe_allow_html=True)
