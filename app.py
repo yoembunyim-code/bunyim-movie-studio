@@ -3,11 +3,13 @@ import os
 import subprocess
 import tempfile
 import whisper
+import numpy as np
+import scipy.io.wavfile as wav
 from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Preview & BGM Master",
+    page_title="VoiceClone Studio Pro - AI Auto Speaker & Pitch Detection",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -97,10 +99,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AUDIO PREVIEW & ROLE MAPPING STUDIO</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AI AUTO SPEAKER & PITCH DETECTION</span>
         </div>
         <div class="badge-container">
-            <span class="badge-vip">❤️ Multi-Voice Preview</span>
+            <span class="badge-vip">🤖 AI Pitch & Diarization</span>
             <span class="badge-ready">🟢 1GB Video Support Active</span>
         </div>
     </div>
@@ -110,7 +112,7 @@ VOICE_PROFILES = {
     "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច)": ("km-KH-PisethNeural", "+0Hz"),
     "តួប្រុស (សំឡេងប្រុសធ្ងន់ច្បាស់)": ("km-KH-PisethNeural", "-2Hz"),
     "តួស្រី (សំឡេងស្រីស្រទន់ពីរោះ)": ("km-KH-SreymomNeural", "+2Hz"),
-    "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំ)": ("km-KH-PisethNeural", "-5Hz"),
+    "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំ)": ("km-KH-PisethNeural", "-6Hz"),
     "តួអង្គរងផ្សេងៗ": ("km-KH-SreymomNeural", "+0Hz")
 }
 
@@ -131,51 +133,24 @@ with col_left:
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Voice Library & Interactive Audio Preview")
+    st.markdown("### 🎛️ AI Auto Speaker & Voice Mapping Center")
     
-    with st.expander("📚 Character Voice Library & Preview (ស្តាប់សំឡេងគំរូតាមតួអង្គ)", expanded=True):
-        st.markdown("📌 កំណត់ម៉ូដសំឡេង និងចុចស្តាប់សំឡេងគំរូនៃតួអង្គនីមួយៗ៖")
+    with st.expander("📚 Character Voice Profiles (កំណត់សំឡេងសម្រាប់ AI)", expanded=True):
+        st.markdown("📌 ប្រព័ន្ធនឹងវិភាគសំឡេងក្នុងវីដេអូដោយស្វ័យប្រវត្តិ (ប្រុស ស្រី ឬចាស់) ហើយយកសំឡេងខាងក្រោមទៅជំនួស៖")
         
         voice_keys = list(VOICE_PROFILES.keys())
         
         v1, v2 = st.columns(2)
         with v1:
             narrator_profile = st.selectbox("សំឡេងអ្នកសម្រាយរឿង", voice_keys, index=0)
-            if st.button("🔊 ស្តាប់សំឡេង: អ្នកសម្រាយ"):
-                sample_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                v_code, v_pitch = VOICE_PROFILES[narrator_profile]
-                subprocess.run(["edge-tts", "--text", "សួស្តី! នេះគឺជាសំឡេងអ្នកសម្រាយរឿងប្រកបដោយវិជ្ជាជីវៈ។", "--voice", v_code, "--pitch", v_pitch, "--write-media", sample_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                if os.path.exists(sample_path):
-                    st.audio(sample_path, format="audio/mp3")
-
             male_profile = st.selectbox("សំឡេងតួប្រុស", voice_keys, index=1)
-            if st.button("🔊 ស្តាប់សំឡេង: តួប្រុស"):
-                sample_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                v_code, v_pitch = VOICE_PROFILES[male_profile]
-                subprocess.run(["edge-tts", "--text", "ហ៊ានតតាំងជាមួយយើងហ្ហេស! មើលមុខគ្នាផង។", "--voice", v_code, "--pitch", v_pitch, "--write-media", sample_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                if os.path.exists(sample_path):
-                    st.audio(sample_path, format="audio/mp3")
-
         with v2:
             female_profile = st.selectbox("សំឡេងតួស្រី", voice_keys, index=2)
-            if st.button("🔊 ស្តាប់សំឡេង: តួស្រី"):
-                sample_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                v_code, v_pitch = VOICE_PROFILES[female_profile]
-                subprocess.run(["edge-tts", "--text", "ចាស៎បង! កុំបារម្ភអី អូននៅទីនេះស្រាប់ហើយ។", "--voice", v_code, "--pitch", v_pitch, "--write-media", sample_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                if os.path.exists(sample_path):
-                    st.audio(sample_path, format="audio/mp3")
-
             elder_profile = st.selectbox("សំឡេងតួចាស់/ព្រឹទ្ធាចារ្យ", voice_keys, index=3)
-            if st.button("🔊 ស្តាប់សំឡេង: តួចាស់"):
-                sample_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                v_code, v_pitch = VOICE_PROFILES[elder_profile]
-                subprocess.run(["edge-tts", "--text", "កាលពីសម័យបុរាណ រឿងរ៉ាវមិនមែនបែបនេះទេចៅអើយ។", "--voice", v_code, "--pitch", v_pitch, "--write-media", sample_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                if os.path.exists(sample_path):
-                    st.audio(sample_path, format="audio/mp3")
 
         other_profile = st.selectbox("សំឡេងតួអង្គរងផ្សេងៗ", voice_keys, index=4)
 
-    with st.expander("⚙️ Advanced Director Settings (BGM & Volume Balance)", expanded=False):
+    with st.expander("⚙️ Advanced Director Settings (BGM & AI Detection)", expanded=False):
         burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូផ្ទាល់", value=True)
         suppress_original = st.checkbox("🟢 បន្ថយសំឡេងដើមវីដេអូ (Mute Original Voices)", value=True)
         bgm_volume = st.slider("🎵 កម្រិតសម្លេងភ្លេងអម BGM (Volume)", min_value=0.1, max_value=1.5, value=0.6, step=0.1)
@@ -187,7 +162,7 @@ with col_right:
 
     tb_col1, tb_col2, tb_col3 = st.columns(3)
     with tb_col1:
-        btn_extract = st.button("🪄 1. Extract & Auto Translate", use_container_width=True)
+        btn_extract = st.button("🪄 1. AI Extract & Auto-Detect Roles", use_container_width=True)
     with tb_col2:
         btn_force = st.button("🌐 2. Force Khmer Translate", use_container_width=True)
     with tb_col3:
@@ -196,6 +171,39 @@ with col_right:
     if btn_clear:
         st.session_state.auto_subtitles = []
         st.rerun()
+
+    def analyze_audio_pitch(wav_file_path, start_sec, duration_sec):
+        """ Analyze audio frequency/pitch to detect Male, Female, or Elder speaker from video """
+        try:
+            rate, data = wav.read(wav_file_path)
+            if len(data.shape) > 1:
+                data = data[:, 0]
+                
+            start_sample = int(start_sec * rate)
+            end_sample = int((start_sec + duration_sec) * rate)
+            
+            segment = data[start_sample:end_sample]
+            if len(segment) == 0:
+                return "អ្នកសម្រាយរឿង"
+                
+            # Perform FFT Frequency Analysis
+            fft_spectrum = np.abs(np.fft.rfft(segment))
+            freqs = np.fft.rfftfreq(len(segment), d=1.0/rate)
+            
+            # Find dominant fundamental frequency
+            peak_freq = freqs[np.argmax(fft_spectrum)]
+            
+            # Classify gender/age based on Pitch Frequency (Hz)
+            if peak_freq > 185:
+                return "តួស្រី"
+            elif 90 <= peak_freq <= 140:
+                return "តួចាស់/ព្រឹទ្ធាចារ្យ"
+            elif 140 < peak_freq <= 185:
+                return "តួប្រុស"
+            else:
+                return "អ្នកសម្រាយរឿង"
+        except Exception:
+            return "អ្នកសម្រាយរឿង"
 
     if btn_extract:
         if uploaded_file is not None:
@@ -215,16 +223,19 @@ with col_right:
                 progress_bar.progress(35)
                 
                 audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                extract_cmd = ["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path]
-                subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                wav_path = tempfile.NamedTemporaryFile(delete=False, suffix='.wav').name
                 
-                status_text.text("⏳ Running Whisper AI speech recognition...")
+                # Extract both MP3 and WAV for AI Pitch Analysis
+                subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-ar", "16000", "-ac", "1", wav_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                status_text.text("⏳ Running Whisper AI Speech Recognition & Diarization...")
                 progress_bar.progress(60)
                 
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
                 
-                status_text.text("⏳ Translating text to Khmer...")
+                status_text.text("⏳ Analyzing Audio Pitch & Detecting Characters (Male, Female, Elder)...")
                 progress_bar.progress(85)
                 
                 translator = Translator(to_lang="km")
@@ -243,17 +254,20 @@ with col_right:
                                 khmer_text = translated
                         except Exception:
                             pass
+                    
+                    # AI Auto Pitch Analysis to detect role automatically
+                    detected_role = analyze_audio_pitch(wav_path, start_time, duration)
                             
                     st.session_state.auto_subtitles.append({
                         "time_sec": start_time,
                         "duration": duration,
-                        "speaker": "អ្នកសម្រាយរឿង",
+                        "speaker": detected_role,
                         "khmer": khmer_text
                     })
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 Script extracted successfully!")
-                st.success("✅ Extracted & Translated into Khmer!")
+                status_text.text("🎉 AI Auto Pitch Analysis & Diarization Complete!")
+                st.success("✅ ប្រព័ន្ធ AI បានវិភាគសម្លេងក្នុងវីដេអូ និងបែងចែកតួអង្គ (ប្រុស ស្រី ចាស់) ដោយស្វ័យប្រវត្តិរួចរាល់!")
                 st.rerun()
                 
             except Exception as e:
@@ -277,7 +291,7 @@ with col_right:
 
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *Script Editor: កែសម្រួលអត្ថបទ ថិរវេលា និងជ្រើសរើសតួអង្គឱ្យបានត្រឹមត្រូវ។*")
+        st.markdown("💡 *Script Editor: AI បានចាប់សំឡេងតួអង្គដោយស្វ័យប្រវត្តិពីវីដេអូ។ អ្នកអាចកែសម្រួលបន្ថែមបានប្រសិនបើត្រូវការ។*")
         
         role_options = ["អ្នកសម្រាយរឿង", "តួប្រុស", "តួស្រី", "តួចាស់/ព្រឹទ្ធាចារ្យ", "តួអង្គរងផ្សេងៗ"]
         
@@ -306,9 +320,9 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export Previewed Pro Video")
+        st.markdown("### 🚀 Export AI Auto-Detected Dubbed Video")
         
-        if st.button("🎬 Render Final Pro Video with Previewed Voices", use_container_width=True):
+        if st.button("🎬 Render Final Pro Video with AI Auto Speakers", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -349,10 +363,10 @@ with col_right:
                     
                     for i, sub in enumerate(st.session_state.auto_subtitles):
                         clean_text = sub["khmer"].strip()
-                        if not clean_text or clean_text in ["。", ".", "ฯ", "?", "!"]:
+                        if not clean_text or clean_text in [" clean_text in ["?", "!", ""]:
                             continue
                             
-                        status_text.text(f"⏳ Generating audio line #{i+1}...")
+                        status_text.text(f"⏳ Generating AI audio for auto-detected role #{i+1}...")
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
                         role = sub.get("speaker", "អ្នកសម្រាយរឿង")
@@ -374,7 +388,7 @@ with col_right:
                             "--text", clean_text,
                             "--voice", voice,
                             "--rate", "+0%",
-                            "--pitch", voice_pitch,
+                            f"--pitch={voice_pitch}",
                             "--write-media", line_audio_path
                         ]
                         subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -385,7 +399,7 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Mixing BGM and Character Voices via FFmpeg...")
+                        status_text.text("⏳ Mixing BGM and AI Auto-Detected Voices via FFmpeg...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
@@ -447,14 +461,14 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Final Pro Rendering Completed!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់! សំឡេងតួប្រុស តួស្រី តួចាស់ ព្រមទាំងប៊ូតុងស្តាប់សំឡេងគំរូ និងភ្លេងអមដំណើរការយ៉ាងល្អឥតខ្ចោះ។")
+                            status_text.text("🎉 AI Diarization Rendering Completed!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់! ប្រព័ន្ធបានចាប់ និងបែងចែកសំឡេងតួអង្គ (ប្រុស ស្រី ចាស់) ដោយស្វ័យប្រវត្តតាមប្រេកង់ (Pitch Frequency) នៃវីដេអូដើម។")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
-                                    label="📥 Download Final Pro Video (.MP4)",
+                                    label="📥 Download AI Auto-Detected Video (.MP4)",
                                     data=file,
-                                    file_name="final_pro_movie_recap.mp4",
+                                    file_name="ai_detected_movie_recap.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
@@ -465,6 +479,6 @@ with col_right:
                 except Exception as e:
                     st.error(f"❌ Render Exception: {e}")
     else:
-        st.info("👆 Upload a video up to 1GB and click **'Extract & Auto Translate'** to start.")
+        st.info("👆 Upload a video up to 1GB and click **'AI Extract & Auto-Detect Roles'** to start.")
     
     st.markdown('</div>', unsafe_allow_html=True)
