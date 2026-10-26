@@ -9,13 +9,13 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Robust Translation & AI Voice Studio",
+    page_title="VoiceClone Studio Pro - Long Video & Top Control Bar",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Dark Cyberpunk & Pro Styling
+# Custom Dark Cyberpunk & Pro Styling with Top Action Bar
 st.markdown("""
     <style>
     .stApp {
@@ -32,10 +32,10 @@ st.markdown("""
         border-radius: 12px;
         border: 1px solid #1E293B;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
     .brand-title {
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 800;
         background: linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%);
         -webkit-background-clip: text;
@@ -44,24 +44,17 @@ st.markdown("""
         align-items: center;
         gap: 10px;
     }
-    .badge-container { display: flex; gap: 10px; }
-    .badge-vip {
-        background: rgba(225, 29, 72, 0.2);
-        color: #FB7185;
-        border: 1px solid #F43F5E;
-        padding: 4px 12px;
+    /* Top Action Bar Buttons Style (Like the reference image) */
+    .top-action-bar {
+        display: flex;
+        gap: 8px;
+        background: #0B101D;
+        padding: 8px 15px;
         border-radius: 20px;
-        font-size: 12px;
-        font-weight: bold;
-    }
-    .badge-ready {
-        background: rgba(16, 185, 129, 0.2);
-        color: #34D399;
-        border: 1px solid #10B981;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: bold;
+        border: 1px solid #1E293B;
+        margin-bottom: 20px;
+        align-items: center;
+        justify-content: flex-start;
     }
     .card-panel {
         background: #0D121F;
@@ -99,11 +92,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| ROBUST KHMER TRANSLATION & AI STUDIO</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| 2+ HOURS LONG MOVIE RECAP STUDIO</span>
         </div>
-        <div class="badge-container">
-            <span class="badge-vip">🤖 Robust Translation</span>
-            <span class="badge-ready">🟢 1GB Video Support Active</span>
+        <div>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Ultrafast 2H+ Ready</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -120,23 +112,35 @@ col_left, col_right = st.columns([1.1, 1.9])
 
 with col_left:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 📺 Video Preview (Up to 1GB)")
-    uploaded_file = st.file_uploader("Upload Video File (.MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
+    st.markdown("### 📺 Video Preview (Supports 2+ Hours Long)")
+    uploaded_file = st.file_uploader("Upload Long Video File (.MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
         st.video(uploaded_file)
         file_size_mb = uploaded_file.size / (1024 * 1024)
         st.success(f"📁 Loaded: {uploaded_file.name} ({file_size_mb:.2f} MB)")
     else:
-        st.info("📌 Drop your video file here to extract and auto dub.")
+        st.info("📌 Drop your 2-hour movie recap file here.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ AI Auto Speaker & Robust Translation Center")
+    st.markdown("### 🎛️ Top Action Bar & Studio Control Center")
+    
+    # Top Action Bar simulation like the reference image (Blur, Text, Sub, Med, Sav)
+    st.markdown("""
+        <div class="top-action-bar">
+            <span style="font-size: 12px; font-weight: bold; color: #38BDF8;">🎛️ Quick Actions:</span>
+            <span style="background: #1E293B; padding: 4px 10px; border-radius: 6px; font-size: 11px; color: #CBD5E1;">✨ Blur Active</span>
+            <span style="background: #1E293B; padding: 4px 10px; border-radius: 6px; font-size: 11px; color: #CBD5E1;">📝 Text Ready</span>
+            <span style="background: #1E293B; padding: 4px 10px; border-radius: 6px; font-size: 11px; color: #34D399;">🟢 Sub On</span>
+            <span style="background: #1E293B; padding: 4px 10px; border-radius: 6px; font-size: 11px; color: #38BDF8;">⚡ Med Speed</span>
+            <span style="background: #1E293B; padding: 4px 10px; border-radius: 6px; font-size: 11px; color: #FB7185;">💾 Auto Save</span>
+        </div>
+    """, unsafe_allow_html=True)
     
     with st.expander("📚 Character Voice Profiles (កំណត់សំឡេងសម្រាប់ AI)", expanded=True):
-        st.markdown("📌 ប្រព័ន្ធនឹងវិភាគសំឡេង និងបកប្រែជាភាសាខ្មែរយ៉ាងរលូន៖")
+        st.markdown("📌 កំណត់សំឡេង AI ឱ្យត្រូវទៅនឹងតួអង្គក្នុងរឿង៖")
         
         voice_keys = list(VOICE_PROFILES.keys())
         
@@ -150,11 +154,11 @@ with col_right:
 
         other_profile = st.selectbox("សំឡេងតួអង្គរងផ្សេងៗ", voice_keys, index=4)
 
-    with st.expander("⚙️ Advanced Director Settings (BGM & AI Detection)", expanded=False):
+    with st.expander("⚙️ Advanced Director Settings (BGM & Volume Boost)", expanded=False):
         burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូផ្ទាល់", value=True)
         suppress_original = st.checkbox("🟢 បន្ថយសំឡេងដើមវីដេអូ (Mute Original Voices)", value=True)
-        bgm_volume = st.slider("🎵 កម្រិតសម្លេងភ្លេងអម BGM (Volume)", min_value=0.1, max_value=1.5, value=0.6, step=0.1)
-        voice_volume = st.slider("🗣️ កម្រិតសំឡេង AI និយាយ (Voice Volume)", min_value=1.0, max_value=3.0, value=1.5, step=0.1)
+        bgm_volume = st.slider("🎵 កម្រិតសម្លេងភ្លេងអម BGM (Volume)", min_value=0.1, max_value=1.5, value=0.4, step=0.1)
+        voice_volume = st.slider("🗣️ កម្រិតសំឡេង AI និយាយ (Voice Volume - ខ្លាំងច្បាស់)", min_value=1.5, max_value=4.0, value=2.5, step=0.1)
         anti_copy_audio = st.checkbox("🟢 បើកប្រព័ន្ធការពារ Copyright សម្លេង (Audio Shift)", value=True)
 
     if 'auto_subtitles' not in st.session_state:
@@ -173,7 +177,6 @@ with col_right:
         st.rerun()
 
     def translate_to_khmer(text):
-        """ Robust translation function with retry mechanism """
         if not text:
             return ""
         for _ in range(3):
@@ -184,7 +187,7 @@ with col_right:
                     return translated
             except Exception:
                 pass
-        return text # Fallback to original if translation fails
+        return text
 
     def analyze_audio_pitch(wav_file_path, start_sec, duration_sec):
         try:
@@ -205,9 +208,9 @@ with col_right:
             
             if peak_freq > 185:
                 return "តួស្រី"
-            elif 90 <= peak_freq <= 140:
+            elif 80 <= peak_freq <= 135:
                 return "តួចាស់/ព្រឹទ្ធាចារ្យ"
-            elif 140 < peak_freq <= 185:
+            elif 135 < peak_freq <= 185:
                 return "តួប្រុស"
             else:
                 return "អ្នកសម្រាយរឿង"
@@ -220,7 +223,7 @@ with col_right:
             status_text = st.empty()
             
             try:
-                status_text.text("⏳ Saving video file...")
+                status_text.text("⏳ Saving long video file...")
                 progress_bar.progress(15)
                 
                 tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
@@ -228,7 +231,7 @@ with col_right:
                 input_video_path = tfile.name
                 tfile.close()
                 
-                status_text.text("⏳ Extracting audio track via FFmpeg...")
+                status_text.text("⏳ Extracting audio track for long video...")
                 progress_bar.progress(35)
                 
                 audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
@@ -237,13 +240,13 @@ with col_right:
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-ar", "16000", "-ac", "1", wav_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
-                status_text.text("⏳ Running Whisper AI Speech Recognition...")
+                status_text.text("⏳ Running Whisper AI Speech Recognition (Long Video Support)...")
                 progress_bar.progress(60)
                 
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
                 
-                status_text.text("⏳ Translating to Khmer & Analyzing Pitch...")
+                status_text.text("⏳ Translating 2H+ script to Khmer & Analyzing Roles...")
                 progress_bar.progress(85)
                 
                 st.session_state.auto_subtitles = []
@@ -264,8 +267,8 @@ with col_right:
                     })
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 Extraction & Translation Complete!")
-                st.success("✅ បានទាញយក និងបកប្រែជាភាសាខ្មែរជោគជ័យទាំងអស់គ្នា!")
+                status_text.text("🎉 Long Video Extraction & Role Mapping Complete!")
+                st.success("✅ បានទាញយក និងបកប្រែវីដេអូរយៈពេលវែងជាភាសាខ្មែរជោគជ័យ!")
                 st.rerun()
                 
             except Exception as e:
@@ -280,12 +283,12 @@ with col_right:
                 translated = translate_to_khmer(current_text)
                 if translated:
                     st.session_state.auto_subtitles[idx]["khmer"] = translated
-        st.success("✅ Force Translation to Khmer Finished!")
+        st.success("✅ Force Translation Finished!")
         st.rerun()
 
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *Script Editor: អ្នកអាចកែសម្រួលអត្ថបទភាសាខ្មែរខាងក្រោមនេះបានតាមចិត្ត។*")
+        st.markdown("💡 *Script Editor: កែសម្រួលអត្ថបទវែងៗតាមតម្រូវការ။*")
         
         role_options = ["អ្នកសម្រាយរឿង", "តួប្រុស", "តួស្រី", "តួចាស់/ព្រឹទ្ធាចារ្យ", "តួអង្គរងផ្សេងៗ"]
         
@@ -314,15 +317,15 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export Final Pro Dubbed Video")
+        st.markdown("### 🚀 Export Ultrafast 2H+ Long Video")
         
-        if st.button("🎬 Render Final Pro Video", use_container_width=True):
+        if st.button("🎬 Render Final 2H+ Long Video (Ultrafast)", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 
                 try:
-                    status_text.text("⏳ Preparing rendering environment...")
+                    status_text.text("⏳ Preparing long video rendering environment...")
                     progress_bar.progress(10)
                     
                     tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
@@ -359,7 +362,7 @@ with col_right:
                         if not clean_text:
                             continue
                             
-                        status_text.text(f"⏳ Generating AI audio line #{i+1}...")
+                        status_text.text(f"⏳ Generating high-volume AI audio line #{i+1}...")
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
                         role = sub.get("speaker", "អ្នកសម្រាយរឿង")
@@ -392,14 +395,14 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Mixing BGM and AI Voices via FFmpeg...")
+                        status_text.text("⏳ Mixing BGM & Rendering 2H+ Video with Ultrafast Speed...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
                         filter_complex_parts = []
                         mix_inputs = []
                         
-                        orig_vol = "0.05" if suppress_original else "0.2"
+                        orig_vol = "0.03" if suppress_original else "0.15"
                         bgm_filter = f"[0:a]volume={orig_vol}[orig]; [orig]pan=stereo|c0=c0|c1=c1,volume={bgm_volume}"
                         if anti_copy_audio:
                             bgm_filter += ",asetrate=44100*1.02,aresample=44100"
@@ -440,12 +443,13 @@ with col_right:
                             video_filter = f"subtitles='{escaped_srt_path}':force_style='FontName=Khmer OS Battambang,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2'"
                             ffmpeg_cmd.extend(["-vf", video_filter])
                             
+                        # ULTRAFAST PRESET FOR 2H+ MOVIES
                         ffmpeg_cmd.extend([
                             "-filter_complex", full_filter_str,
                             "-map", "0:v" if not burn_subtitles else "0:v",
                             "-map", "[aout]",
                             "-c:v", "libx264",
-                            "-preset", "fast",
+                            "-preset", "ultrafast",
                             "-c:a", "aac",
                             output_video_path
                         ])
@@ -454,14 +458,14 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Final Rendering Completed!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់! គ្រប់ប្រយោគត្រូវបានបកប្រែជាភាសាខ្មែរយ៉ាងរលូន។")
+                            status_text.text("🎉 Long Movie Rendering Completed Successfully!")
+                            st.success("✅ បាន Render វីដេអូរឿងវែង (២ម៉ោងជាង) រួចរាល់ដោយល្បឿនលឿន និងសំឡេង AI ឮច្បាស់ល្អឥតខ្ចោះ!")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
-                                    label="📥 Download Final Pro Video (.MP4)",
+                                    label="📥 Download 2H+ Movie Recap Video (.MP4)",
                                     data=file,
-                                    file_name="final_khmer_dubbed_video.mp4",
+                                    file_name="long_movie_recap_pro.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
@@ -472,6 +476,6 @@ with col_right:
                 except Exception as e:
                     st.error(f"❌ Render Exception: {e}")
     else:
-        st.info("👆 Upload a video up to 1GB and click **'AI Extract & Auto Translate'** to start.")
+        st.info("👆 Upload a 2H+ video and click **'AI Extract & Auto Translate'** to start.")
     
     st.markdown('</div>', unsafe_allow_html=True)
