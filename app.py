@@ -2,10 +2,18 @@ import streamlit as st
 import os
 import subprocess
 import tempfile
-import whisper
 import numpy as np
 import scipy.io.wavfile as wav
 import re
+import time
+
+# ប្រើ faster-whisper ជំនួស whisper ដើម ដើម្បីដោះស្រាយ Error និងបង្កើនល្បឿន
+try:
+    from faster_whisper import WhisperModel
+    WHISPER_AVAILABLE = True
+except ImportError:
+    WHISPER_AVAILABLE = False
+    st.error("⚠️ សូមដំឡើង `faster-whisper` ជាមុនសិន៖ `pip install faster-whisper`")
 
 # ប្រើ deep-translator ជំនួស translate (គាំទ្រខ្មែរល្អជាង)
 try:
@@ -73,7 +81,6 @@ def translate_to_khmer(text, context_hint=""):
     if not text or not text.strip():
         return ""
     
-    # សម្អាតអត្ថបទ
     clean = text.strip()
     
     # ព្យាយាម deep-translator មុន (គុណភាពខ្ពស់ជាង)
@@ -85,7 +92,7 @@ def translate_to_khmer(text, context_hint=""):
                 if result and result.strip() and result != clean:
                     return result.strip()
             except Exception:
-                pass
+                time.sleep(0.5) # បន្ថែម delay បន្តិចការពារ Rate Limit
     
     # Fallback ទៅ translate library ដើម
     try:
@@ -110,30 +117,26 @@ def merge_short_segments(segments, min_duration=1.2, max_chars=200):
     buffer = None
     
     for seg in segments:
-        text = seg.get("text", "").strip()
+        # faster-whisper ប្រើ object មិនមែន dict ទេ
+        text = seg.text.strip()
+        start = seg.start
+        end = seg.end
+        
         if not text:
             continue
         
         if buffer is None:
-            buffer = {
-                "start": seg["start"],
-                "end": seg["end"],
-                "text": text
-            }
+            buffer = {"start": start, "end": end, "text": text}
         else:
             combined_len = len(buffer["text"]) + len(text)
-            combined_dur = seg["end"] - buffer["start"]
+            combined_dur = end - buffer["start"]
             # បញ្ចូលបើនៅជាប់គ្នា និងមិនវែងពេក
             if combined_len <= max_chars and combined_dur <= 12.0:
-                buffer["end"] = seg["end"]
+                buffer["end"] = end
                 buffer["text"] += " " + text
             else:
                 merged.append(buffer)
-                buffer = {
-                    "start": seg["start"],
-                    "end": seg["end"],
-                    "text": text
-                }
+                buffer = {"start": start, "end": end, "text": text}
     
     if buffer is not None:
         merged.append(buffer)
@@ -157,16 +160,12 @@ def detect_speaker_by_pitch(wav_file_path, start_sec, duration_sec, prev_speaker
         if len(segment) < rate * 0.3:  # ខ្លីពេក
             return prev_speaker or default
         
-        # បន្ថយ noise មុនវិភាគ
         segment = segment - np.mean(segment)
-        
-        # ប្រើ autocorrelation សម្រាប់ pitch detection (ត្រឹមត្រូវជាង FFT peak)
         fft_size = min(len(segment), 2**14)
         spec = np.fft.rfft(segment[:fft_size] * np.hanning(fft_size))
         power = np.abs(spec) ** 2
         freqs = np.fft.rfftfreq(fft_size, d=1.0/rate)
         
-        # តម្រងតែជួរមនុស្សនិយាយ (70-350 Hz)
         valid_mask = (freqs >= 70) & (freqs <= 350)
         if not np.any(valid_mask):
             return prev_speaker or default
@@ -174,18 +173,15 @@ def detect_speaker_by_pitch(wav_file_path, start_sec, duration_sec, prev_speaker
         valid_power = power[valid_mask]
         valid_freqs = freqs[valid_mask]
         
-        # យក harmonic peaks ច្រើន ហើយគណនា median
         threshold = np.max(valid_power) * 0.3
         peak_indices = np.where(valid_power > threshold)[0]
         
         if len(peak_indices) > 0:
             peak_freqs = valid_freqs[peak_indices]
-            # យកតែ peak ដែលមិនមែន harmonic ខ្ពស់ពេក
             dominant_freq = float(np.median(peak_freqs))
         else:
             dominant_freq = float(valid_freqs[np.argmax(valid_power)])
         
-        # ចាត់ថ្នាក់តាម pitch (ជួរខ្មែរធម្មតា)
         if dominant_freq >= 200:
             detected = "តួស្រីក្មេង (សំឡេងស្រីក្មេងរស់រវើក)"
         elif dominant_freq >= 165:
@@ -197,7 +193,6 @@ def detect_speaker_by_pitch(wav_file_path, start_sec, duration_sec, prev_speaker
         else:
             detected = default
         
-        # Smooth: បើ prev_speaker ជិតគ្នា រក្សា prev (កាត់បន្ថយការលោត)
         if prev_speaker and prev_speaker == detected:
             return detected
         return detected
@@ -206,10 +201,9 @@ def detect_speaker_by_pitch(wav_file_path, start_sec, duration_sec, prev_speaker
 
 
 def estimate_khmer_speech_duration(text, base_rate=13.0):
-    """ប៉ាន់ស្មានរយៈពេលនិយាយខ្មែរ (ខ្មែរនិយាយ ~12-14 តួ/វិនាទី)"""
+    """ប៉ាន់ស្មានរយៈពេលនិយាយខ្មែរ"""
     if not text:
         return 0.0
-    # រាប់តួអក្សរខ្មែរពិត (មិនរាប់ space និងសញ្ញា)
     khmer_chars = len(re.findall(r'[\u1780-\u17FF]', text))
     other_chars = len(text) - khmer_chars
     total = khmer_chars + (other_chars * 0.5)
@@ -276,11 +270,9 @@ with col_right:
         st.markdown("**🗣️ Voice Tuning:**")
         t1, t2 = st.columns(2)
         with t1:
-            pitch_shift = st.slider("Pitch Shift (Hz)", -8, 8, 0, 1,
-                help="បន្ថយ/បង្កើន pitch ដើម្បីឲ្យត្រូវតួអង្គ")
+            pitch_shift = st.slider("Pitch Shift (Hz)", -8, 8, 0, 1)
         with t2:
-            rate_shift = st.slider("Speed Rate (%)", -20, 20, 0, 2,
-                help="សំឡេងនិយាយលឿន/យឺត")
+            rate_shift = st.slider("Speed Rate (%)", -20, 20, 0, 2)
 
     with st.expander("⚙️ Advanced Director Settings", expanded=False):
         burn_subtitles    = st.checkbox("🟢 Burn Subtitles on Video", value=enable_sub)
@@ -307,6 +299,8 @@ with col_right:
     if btn_extract:
         if uploaded_file is None:
             st.warning("⚠️ Please upload a video file first!")
+        elif not WHISPER_AVAILABLE:
+            st.error("❌ សូមដំឡើង faster-whisper សិន៖ pip install faster-whisper")
         else:
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -341,26 +335,26 @@ with col_right:
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-ar", "16000", "-ac", "1", wav_path],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
-                status_text.text("⏳ Whisper AI recognizing speech (this may take a while)...")
+                status_text.text("⏳ Faster-Whisper AI recognizing speech (Lighter & Faster)...")
                 progress_bar.progress(50)
                 
-                # ប្រើ model "small" សម្រាប់ភាសាខ្មែរ (ត្រឹមត្រូវជាង base)
-                model = whisper.load_model("small")
-                result = model.transcribe(
+                # ប្តូរមកប្រើ faster-whisper
+                # ប្រើ "small" ឬ "base" អាស្រ័យលើ RAM របស់ Server
+                model = WhisperModel("small", device="cpu", compute_type="int8")
+                segments, info = model.transcribe(
                     audio_path,
-                    language=None,          # auto-detect
-                    task="transcribe",
+                    language=None, 
                     beam_size=5,
-                    best_of=5,
-                    temperature=0.0,
-                    condition_on_previous_text=True,
-                    vad_filter=True,
+                    vad_filter=True, 
                 )
+                
+                # faster-whisper ត្រឡប់មកវិញជា generator ត្រូវបំលែងជា list ដើម្បីអាន
+                raw_segments = list(segments)
                 
                 status_text.text("⏳ Merging segments & translating with context...")
                 progress_bar.progress(75)
                 
-                merged_segments = merge_short_segments(result["segments"])
+                merged_segments = merge_short_segments(raw_segments)
                 
                 st.session_state.auto_subtitles = []
                 prev_speaker = None
@@ -370,13 +364,11 @@ with col_right:
                     duration   = round(seg["end"] - seg["start"], 2)
                     original   = seg["text"].strip()
                     
-                    # បកប្រែជាមួយ context ពីប្រយោគមុន
                     context = ""
                     if st.session_state.auto_subtitles:
                         context = st.session_state.auto_subtitles[-1]["khmer"][-80:]
-                    khmer_text = translate_to_khmer(original, context)
                     
-                    # កំណត់តួអង្គ (ជាមួយ prev_speaker smoothing)
+                    khmer_text = translate_to_khmer(original, context)
                     detected = detect_speaker_by_pitch(wav_path, start_time, duration, prev_speaker)
                     prev_speaker = detected
                     
@@ -502,7 +494,6 @@ with col_right:
                         voice, v_pitch, v_rate = VOICE_PROFILES.get(v_name,
                             ("km-KH-PisethNeural", "+0Hz", "+0%"))
                         
-                        # បន្ថែម pitch/rate shift ពី slider
                         try:
                             base_pitch = int(v_pitch.replace("Hz", "").replace("+", ""))
                             new_pitch = base_pitch + pitch_shift
@@ -552,7 +543,6 @@ with col_right:
                     filter_parts = []
                     mix_inputs   = []
                     
-                    # BGM
                     orig_vol = "0.03" if suppress_original else "0.15"
                     bgm_f = f"[0:a]volume={orig_vol}[orig]; [orig]pan=stereo|c0=c0|c1=c1,volume={bgm_volume}"
                     if anti_copy_audio:
@@ -561,22 +551,18 @@ with col_right:
                     filter_parts.append(bgm_f)
                     mix_inputs.append("[bgm]")
                     
-                    # Voice lines - កែ sync ឲ្យត្រឹមត្រូវ
                     for idx, sub in enumerate(valid_subs):
                         delay_ms = int(sub["time_sec"] * 1000)
                         target_dur = sub["duration"]
-                        
-                        # ប្រើការប៉ាន់ស្មានខ្មែរត្រឹមត្រូវ
                         est_dur = estimate_khmer_speech_duration(sub["khmer"])
                         
-                        # atempo ត្រឹមត្រូវ: 0.7 - 1.4 (មិនឲ្យខូចសំឡេង)
                         speed = 1.0
                         if target_dur > 0 and est_dur > 0:
                             ratio = est_dur / target_dur
                             if ratio > 1.15:
-                                speed = min(1.4, ratio)        # បង្កើនល្បឿនបន្តិច
+                                speed = min(1.4, ratio)
                             elif ratio < 0.7:
-                                speed = max(0.75, ratio)       # បន្ថយល្បឿនបន្តិច
+                                speed = max(0.75, ratio)
                         
                         stream_idx = idx + 1
                         if abs(speed - 1.0) > 0.05:
