@@ -6,9 +6,7 @@ import numpy as np
 import scipy.io.wavfile as wav
 import re
 import time
-import asyncio
 
-# ប្រើ faster-whisper សម្រាប់ការស្តាប់សំឡេង
 try:
     from faster_whisper import WhisperModel
     WHISPER_AVAILABLE = True
@@ -16,16 +14,16 @@ except ImportError:
     WHISPER_AVAILABLE = False
     st.error("⚠️ សូមដំឡើង `faster-whisper` ជាមុនសិន៖ `pip install faster-whisper`")
 
-# ប្រើ googletrans ដែលជាបណ្ណាល័យឥតគិតថ្លៃ និងគ្មានដែនកំណត់
+# ប្រើ deep-translator ដែលមានស្ថិរភាពជាង
 try:
-    from googletrans import Translator
+    from deep_translator import GoogleTranslator
     TRANSLATOR_AVAILABLE = True
 except ImportError:
     TRANSLATOR_AVAILABLE = False
-    st.error("⚠️ សូមដំឡើង `googletrans==4.0.0-rc1` ជាមុនសិន៖ `pip install googletrans==4.0.0-rc1`")
+    st.error("⚠️ សូមដំឡើង `deep-translator` ជាមុនសិន៖ `pip install deep-translator`")
 
 st.set_page_config(
-    page_title="Khmer Voice & Subtitle Master (Unlimited)",
+    page_title="Khmer Voice & Subtitle Master",
     page_icon="🎙️", layout="wide", initial_sidebar_state="expanded"
 )
 
@@ -73,43 +71,26 @@ VOICE_PROFILES = {
     "តួអង្គរង (Other)": ("km-KH-SreymomNeural", "+2Hz", "+0%")
 }
 
-# ============ មុខងារបកប្រែតាមរយៈ googletrans (គ្មានដែនកំណត់) ============
-async def translate_to_khmer_async(text, translator):
-    """បកប្រែអត្ថបទជាភាសាខ្មែរដោយប្រើ googletrans"""
+# ============ មុខងារបកប្រែ (ប្រើ deep-translator + retry logic) ============
+def translate_to_khmer(text):
     if not text or not text.strip():
         return ""
     clean = text.strip()
     
-    # googletrans អាចដំណើរការជាមួយអត្ថបទវែងបានដោយខ្លួនឯង
-    try:
-        result = await translator.translate(clean, dest='km')
-        if result and result.text and result.text.strip() != clean:
-            return result.text.strip()
-    except Exception as e:
-        # ប្រសិនបើមានបញ្ហាបណ្តោះអាសន្ន សូមរង់ចាំបន្តិច ហើយព្យាយាមម្តងទៀត
-        time.sleep(1)
-        try:
-            result = await translator.translate(clean, dest='km')
-            if result and result.text:
-                return result.text.strip()
-        except Exception:
-            pass
-            
-    return clean
-
-def translate_to_khmer(text):
-    """Wrapper សម្រាប់ហៅ async function ក្នុង Streamlit"""
     if not TRANSLATOR_AVAILABLE:
-        return text
-        
-    async def _run():
-        async with Translator() as translator:
-            return await translate_to_khmer_async(text, translator)
+        return clean
+
+    # ព្យាយាមបកប្រែរហូតដល់ 5 ដង ដើម្បីកាត់បន្ថយបញ្ហា Rate Limit ឬ Server រវល់
+    for attempt in range(5):
+        try:
+            translator = GoogleTranslator(source='auto', target='km')
+            result = translator.translate(clean)
+            if result and result.strip() and result.strip() != clean:
+                return result.strip()
+        except Exception:
+            time.sleep(1.5) # រង់ចាំបន្តិចមុននឹងព្យាយាមម្តងទៀត
             
-    try:
-        return asyncio.run(_run())
-    except Exception:
-        return text
+    return clean # ប្រសិនបើបរាជ័យទាំងអស់ ទើបយកអត្ថបទដើម
 
 # ============ មុខងារបំញ្ចូល Segment ខ្លីៗ ============
 def merge_short_segments(segments, max_chars=200):
@@ -228,7 +209,7 @@ with col_right:
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
-    if st.button("🪄 1. Extract & Translate (Unlimited)", use_container_width=True):
+    if st.button("🪄 1. Extract & Translate", use_container_width=True):
         if uploaded_file is None:
             st.warning("⚠️ Please upload a video first!")
         elif not WHISPER_AVAILABLE or not TRANSLATOR_AVAILABLE:
@@ -260,7 +241,7 @@ with col_right:
                 segments, info = model.transcribe(audio_path, language=None, beam_size=5, vad_filter=True)
                 raw_segments = list(segments)
                 
-                status_text.text("⏳ កំពុងបកប្រែជាភាសាខ្មែរ (គ្មានដែនកំណត់)...")
+                status_text.text("⏳ កំពុងបកប្រែជាភាសាខ្មែរ...")
                 progress_bar.progress(75)
                 
                 merged_segments = merge_short_segments(raw_segments)
@@ -272,7 +253,6 @@ with col_right:
                     duration   = round(seg["end"] - seg["start"], 2)
                     original   = seg["text"].strip()
                     
-                    # ហៅមុខងារបកប្រែថ្មី
                     khmer_text = translate_to_khmer(original)
                     
                     detected = detect_speaker_by_pitch(wav_path, start_time, duration, prev_speaker)
