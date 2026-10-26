@@ -9,7 +9,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Real-time Live Preview Blur",
+    page_title="VoiceClone Studio Pro - Precise Compact Blur",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,10 +80,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| LIVE BLUR PREVIEW STUDIO</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| PRECISE COMPACT BLUR STUDIO</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Live Preview Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Compact Blur Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -100,37 +100,24 @@ col_left, col_right = st.columns([1.1, 1.9])
 
 with col_left:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 📺 Live Video Preview & Download Center")
+    st.markdown("### 📺 Video Preview & Download Center")
     uploaded_file = st.file_uploader("Upload Long Video File (.MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
-        # Save temporary original file for preview generation
-        if 'input_preview_path' not in st.session_state:
-            tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
-            tfile.write(uploaded_file.read())
-            st.session_state.input_preview_path = tfile.name
-            tfile.close()
-
-        # Check if we have a fully rendered final video or live preview video
         if 'rendered_video_path' in st.session_state and os.path.exists(st.session_state.rendered_video_path):
-            st.markdown("🎉 **Rendered Final Pro Video:**")
+            st.markdown("🎉 **Rendered Video Result (ចាក់មើលរួចចុច Download ខាងក្រោម):**")
             st.video(st.session_state.rendered_video_path)
             
             with open(st.session_state.rendered_video_path, "rb") as file:
                 st.download_button(
                     label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
                     data=file,
-                    file_name="pro_dubbed_movie.mp4",
+                    file_name="compact_blur_movie.mp4",
                     mime="video/mp4",
                     use_container_width=True
                 )
         else:
-            st.markdown("🎥 **Live Preview (សារេ Blur Slider ខាងស្ដាំ វីដេអូនឹងដូរតាមហ្នឹង):**")
-            # We will display the preview video here
-            if 'live_preview_path' in st.session_state and os.path.exists(st.session_state.live_preview_path):
-                st.video(st.session_state.live_preview_path)
-            else:
-                st.video(uploaded_file)
+            st.video(uploaded_file)
             
         file_size_mb = uploaded_file.size / (1024 * 1024)
         st.success(f"📁 Loaded: {uploaded_file.name} ({file_size_mb:.2f} MB)")
@@ -154,17 +141,8 @@ with col_right:
         enable_med = st.checkbox("⚡ Med", value=True, key="cb_med")
     with act5:
         enable_sav = st.checkbox("💾 Save", value=True, key="cb_sav")
-    
-    # Custom Blur Box Sizing Controls with Instant Live Preview Button
-    with st.expander("🎚️ Custom Blur Box Settings & Live Preview", expanded=True):
-        st.markdown("📌 កំណត់ទំហំ និងទីតាំងប្រអប់ Blur តាមចិត្ត៖")
-        blur_w = st.slider("ប្រវែងទទឹងប្រអប់ Blur (Width %)", min_value=30, max_value=100, value=70, step=5)
-        blur_h = st.slider("កម្ពស់ប្រអប់ Blur (Height %)", min_value=5, max_value=30, value=12, step=1)
-        blur_y = st.slider("ទីតាំងបញ្ឈរ (Vertical Y Position %)", min_value=50, max_value=90, value=75, step=1)
-        
-        btn_update_preview = st.button("🔄 Update Live Blur Preview", use_container_width=True)
 
-    with st.expander("📚 Character Voice Profiles (កំណត់សំឡេងសម្រាប់ AI)", expanded=False):
+    with st.expander("📚 Character Voice Profiles (កំណត់សំឡេងសម្រាប់ AI)", expanded=True):
         st.markdown("📌 កំណត់សំឡេង AI ឱ្យត្រូវទៅនឹងតួអង្គក្នុងរឿង៖")
         
         voice_keys = list(VOICE_PROFILES.keys())
@@ -186,34 +164,6 @@ with col_right:
         voice_volume = st.slider("🗣️ កម្រិតសំឡេង AI និយាយ (Voice Volume - ខ្លាំងច្បាស់)", min_value=1.5, max_value=4.0, value=2.5, step=0.1)
         anti_copy_audio = st.checkbox("🟢 បើកប្រព័ន្ធការពារ Copyright សម្លេង (Audio Shift)", value=True)
 
-    # Handle Live Preview Update Action
-    if btn_update_preview and uploaded_file is not None:
-        try:
-            prev_out = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            x_pct = (100 - blur_w) / 2
-            w_expr = f"iw*{blur_w/100}"
-            h_expr = f"ih*{blur_h/100}"
-            x_expr = f"iw*{x_pct/100}"
-            y_expr = f"ih*{blur_y/100}"
-            
-            if enable_blur:
-                vf_str = f"split[orig][to_blur];[to_blur]crop={w_expr}:{h_expr}:{x_expr}:{y_expr},boxblur=lr=3:lp=2[blurred];[orig][blurred]overlay={x_expr}:{y_expr}"
-            else:
-                vf_str = "null"
-
-            cmd = ["ffmpeg", "-y", "-i", st.session_state.input_preview_path, "-ss", "0", "-to", "5", "-c:v", "libx264", "-preset", "ultrafast"]
-            if vf_str != "null":
-                cmd.extend(["-vf", vf_str])
-            cmd.append(prev_out)
-            
-            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if os.path.exists(prev_out) and os.path.getsize(prev_out) > 0:
-                st.session_state.live_preview_path = prev_out
-                st.success("✅ បានអាប់ដេត Live Preview រួចរាល់! សូមមើលវីដេអូនៅខាងឆ្វេង។")
-                st.rerun()
-        except Exception as e:
-            st.error(f"❌ Preview Error: {e}")
-
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
@@ -229,8 +179,6 @@ with col_right:
         st.session_state.auto_subtitles = []
         if 'rendered_video_path' in st.session_state:
             del st.session_state.rendered_video_path
-        if 'live_preview_path' in st.session_state:
-            del st.session_state.live_preview_path
         st.rerun()
 
     def translate_to_khmer(text):
@@ -452,18 +400,14 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Applying Custom Blur Box & Rendering Video...")
+                        status_text.text("⏳ Applying Compact Blur Box & Rendering Video...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
                         video_filters = []
                         if enable_blur:
-                            x_pct = (100 - blur_w) / 2
-                            w_expr = f"iw*{blur_w/100}"
-                            h_expr = f"ih*{blur_h/100}"
-                            x_expr = f"iw*{x_pct/100}"
-                            y_expr = f"ih*{blur_y/100}"
-                            video_filters.append(f"split[orig][to_blur];[to_blur]crop={w_expr}:{h_expr}:{x_expr}:{y_expr},boxblur=lr=3:lp=2[blurred];[orig][blurred]overlay={x_expr}:{y_expr}")
+                            # COMPACT BLUR BOX: Narrow and thin box matching exactly the text footprint (Width=60%, Height=8%, Position Y=80%)
+                            video_filters.append("split[orig][to_blur];[to_blur]crop=iw*0.6:ih*0.08:iw*0.2:ih*0.80,boxblur=lr=3:lp=2[blurred];[orig][blurred]overlay=iw*0.2:ih*0.80")
                             
                         if burn_subtitles:
                             escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
@@ -531,7 +475,7 @@ with col_right:
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
                             status_text.text("🎉 Video Rendered Successfully!")
-                            st.success("✅ បាន Render រួចរាល់! វីដេអូចុងក្រោយត្រូវបានបង្កើតឡើងដោយជោគជ័យ។")
+                            st.success("✅ បាន Render រួចរាល់! ប្រអប់ Blur ឥឡូវនេះមានទំហំតូចល្មមប៉ុនទំហំអក្សរយ៉ាងស្អាត។")
                             
                             st.session_state.rendered_video_path = output_video_path
                             st.rerun()
