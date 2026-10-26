@@ -75,7 +75,7 @@ VOICE_PROFILES = {
     "តួអង្គរងផ្សេងៗ": ("km-KH-SreymomNeural", "+2Hz", "+0%")
 }
 
-# ============ មុខងារបកប្រែថ្មី (ប្រសើរជាងមុន) ============
+# ============ មុខងារបកប្រែថ្មី (កែសម្រួលឱ្យព្យាយាមច្រើនដង) ============
 def translate_to_khmer(text, context_hint=""):
     """បកប្រែជាមួយ context និង fallback ច្រើនស្រទាប់"""
     if not text or not text.strip():
@@ -83,16 +83,16 @@ def translate_to_khmer(text, context_hint=""):
     
     clean = text.strip()
     
-    # ព្យាយាម deep-translator មុន (គុណភាពខ្ពស់ជាង)
     if TRANSLATOR_AVAILABLE:
-        for _ in range(3):
+        # ព្យាយាមបកប្រែរហូតដល់ 5 ដង ដើម្បីកាត់បន្ថយបញ្ហា Rate Limit
+        for attempt in range(5):
             try:
                 translator = GoogleTranslator(source='auto', target='km')
                 result = translator.translate(clean)
                 if result and result.strip() and result != clean:
                     return result.strip()
             except Exception:
-                time.sleep(0.5) # បន្ថែម delay បន្តិចការពារ Rate Limit
+                time.sleep(1.5) # រង់ចាំបន្តិចមុននឹងព្យាយាមម្តងទៀត
     
     # Fallback ទៅ translate library ដើម
     try:
@@ -117,7 +117,6 @@ def merge_short_segments(segments, min_duration=1.2, max_chars=200):
     buffer = None
     
     for seg in segments:
-        # faster-whisper ប្រើ object មិនមែន dict ទេ
         text = seg.text.strip()
         start = seg.start
         end = seg.end
@@ -130,7 +129,6 @@ def merge_short_segments(segments, min_duration=1.2, max_chars=200):
         else:
             combined_len = len(buffer["text"]) + len(text)
             combined_dur = end - buffer["start"]
-            # បញ្ចូលបើនៅជាប់គ្នា និងមិនវែងពេក
             if combined_len <= max_chars and combined_dur <= 12.0:
                 buffer["end"] = end
                 buffer["text"] += " " + text
@@ -157,7 +155,7 @@ def detect_speaker_by_pitch(wav_file_path, start_sec, duration_sec, prev_speaker
         end_sample = min(len(data), int((start_sec + duration_sec) * rate))
         segment = data[start_sample:end_sample]
         
-        if len(segment) < rate * 0.3:  # ខ្លីពេក
+        if len(segment) < rate * 0.3:
             return prev_speaker or default
         
         segment = segment - np.mean(segment)
@@ -193,15 +191,12 @@ def detect_speaker_by_pitch(wav_file_path, start_sec, duration_sec, prev_speaker
         else:
             detected = default
         
-        if prev_speaker and prev_speaker == detected:
-            return detected
         return detected
     except Exception:
         return prev_speaker or default
 
 
 def estimate_khmer_speech_duration(text, base_rate=13.0):
-    """ប៉ាន់ស្មានរយៈពេលនិយាយខ្មែរ"""
     if not text:
         return 0.0
     khmer_chars = len(re.findall(r'[\u1780-\u17FF]', text))
@@ -338,8 +333,6 @@ with col_right:
                 status_text.text("⏳ Faster-Whisper AI recognizing speech (Lighter & Faster)...")
                 progress_bar.progress(50)
                 
-                # ប្តូរមកប្រើ faster-whisper
-                # ប្រើ "small" ឬ "base" អាស្រ័យលើ RAM របស់ Server
                 model = WhisperModel("small", device="cpu", compute_type="int8")
                 segments, info = model.transcribe(
                     audio_path,
@@ -348,7 +341,6 @@ with col_right:
                     vad_filter=True, 
                 )
                 
-                # faster-whisper ត្រឡប់មកវិញជា generator ត្រូវបំលែងជា list ដើម្បីអាន
                 raw_segments = list(segments)
                 
                 status_text.text("⏳ Merging segments & translating with context...")
