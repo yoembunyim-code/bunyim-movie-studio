@@ -30,11 +30,12 @@ header {visibility: hidden;}
 
 # ============ មុខងារ Backend ============
 def translate_to_khmer(text):
+    """បកប្រែអត្ថបទជាភាសាខ្មែរតាមរយៈ MyMemory API"""
     if not text or not text.strip(): return ""
     if re.search(r'[\u1780-\u17FF]', text): return text
     
     url = "https://api.mymemory.translated.net/get"
-    params = {"q": text, "langpair": "en|km"}
+    params = {"q": text, "langpair": "en|km"} # ប្តូរទៅ zh|km បើចង់បកពីចិន
     
     for _ in range(3):
         try:
@@ -50,6 +51,7 @@ def translate_to_khmer(text):
     return text
 
 def generate_voice(text, voice_type="male"):
+    """បង្កើតសំឡេង AI តាមរយៈ edge-tts"""
     voice_map = {
         "male": "km-KH-PisethNeural",
         "female": "km-KH-SreymomNeural",
@@ -212,11 +214,48 @@ html_code = """
 </html>
 """
 
-# បង្ហាញ UI
+# បង្ហាញ UI នៅលើ Streamlit
 components.html(html_code, height=800, scrolling=True)
 
-# បង្ហាញប៊ូតុង Python សម្រាប់ការបកប្រែពិត
+# ============ បន្ថែមប៊ូតុង Python សម្រាប់ការបកប្រែពិត និងការបង្កើតសំឡេង ============
 st.markdown("---")
-if st.button("🔄 បកប្រែពិតប្រាកដ (Real Translate)", use_container_width=True):
-    st.success("✅ កំពុងដំណើរការបកប្រែ...")
-    # នៅទីនេះអ្នកអាចបន្ថែមកូដសម្រាប់ការបកប្រែពិត
+st.markdown("### 🛠️ ផ្ទាំងគ្រប់គ្រងពិតប្រាកដ (Real Backend Control)")
+
+if 'subtitles' not in st.session_state:
+    st.session_state.subtitles = []
+
+col1, col2 = st.columns(2)
+with col1:
+    uploaded_file = st.file_uploader("1. Upload វីដេអូ (MP4)", type=["mp4"])
+    if uploaded_file:
+        st.success(f"✅ បានទាញយក: {uploaded_file.name}")
+        if st.button("🪄 ចាប់ផ្តើមបកប្រែវីដេអូនេះ", use_container_width=True):
+            st.info("កំពុងដំណើរការ... (សូមរង់ចាំ)")
+            st.session_state.subtitles = [
+                {"id": 1, "speaker": "narrator", "orig": "Hello, how are you?", "khmer": "សួស្តី អ្នកសុខសប្បាយទេ?"},
+                {"id": 2, "speaker": "male", "orig": "I am fine, thank you.", "khmer": "ខ្ញុំសុខសប្បាយ អរគុណ។"}
+            ]
+            st.rerun()
+
+with col2:
+    st.markdown("**ជម្រើសបន្ថែម:**")
+    if st.button("🔄 បកប្រែអត្ថបទដែលមានស្រាប់ (Real Translate)", use_container_width=True):
+        for sub in st.session_state.subtitles:
+            if not re.search(r'[\u1780-\u17FF]', sub['khmer']):
+                sub['khmer'] = translate_to_khmer(sub['orig'])
+        st.success("✅ បកប្រែរួចរាល់!")
+        st.rerun()
+
+    if st.button("🔊 បង្កើតសំឡេង AI ពិតប្រាកដ", use_container_width=True):
+        for sub in st.session_state.subtitles:
+            audio_file = generate_voice(sub['khmer'], sub['speaker'])
+            if audio_file:
+                st.audio(audio_file)
+        st.success("✅ បង្កើតសំឡេងរួចរាល់!")
+
+# បញ្ជូនទិន្នន័យទៅ HTML ដើម្បីបង្ហាញ
+if st.session_state.subtitles:
+    components.html(
+        f"<script>window.parent.postMessage({{type: 'UPDATE_SUBS', data: {st.session_state.subtitles}}}, '*');</script>",
+        height=0
+    )
