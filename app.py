@@ -9,7 +9,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Stable Blur Fix",
+    page_title="VoiceClone Studio Pro - Error-Free Fast Render",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,10 +80,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| STABLE BLUR MASTER</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| STABLE FAST RENDER STUDIO</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Stable Blur Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ 100% Stable Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -112,7 +112,7 @@ with col_left:
                 st.download_button(
                     label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
                     data=file,
-                    file_name="stable_blur_movie.mp4",
+                    file_name="stable_dubbed_movie.mp4",
                     mime="video/mp4",
                     use_container_width=True
                 )
@@ -142,7 +142,7 @@ with col_right:
     with act5:
         enable_sav = st.checkbox("💾 Save", value=True, key="cb_sav")
 
-    with st.expander("📚 Character Voice Profiles (កំណត់សំឡេងសម្រាប់ AI)", expanded=True):
+    with st.expander("📚 Character Voice Profiles (កំណត់សំឡេងសម្រាប់ AI)", expanded=False):
         st.markdown("📌 កំណត់សំឡេង AI ឱ្យត្រូវទៅនឹងតួអង្គក្នុងរឿង៖")
         
         voice_keys = list(VOICE_PROFILES.keys())
@@ -291,37 +291,39 @@ with col_right:
         st.success("✅ Force Translation Finished!")
         st.rerun()
 
+    # COLLAPSIBLE SCRIPT EDITOR BOX
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *Script Editor: កែសម្រួលអត្ថបទតាមតម្រូវការ។*")
-        
-        role_options = ["អ្នកសម្រាយរឿង", "តួប្រុស", "តួស្រី", "តួចាស់/ព្រឹទ្ធាចារ្យ", "តួអង្គរងផ្សេងៗ"]
-        
-        for idx, sub in enumerate(st.session_state.auto_subtitles):
-            c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
-            with c1:
-                st.session_state.auto_subtitles[idx]["time_sec"] = st.number_input(
-                    f"Start #{idx+1}", value=sub["time_sec"], step=0.1, key=f"s_{idx}"
-                )
-            with c2:
-                st.session_state.auto_subtitles[idx]["duration"] = st.number_input(
-                    f"Dur #{idx+1}", value=sub["duration"], step=0.1, key=f"d_{idx}"
-                )
-            with c3:
-                current_speaker = sub.get("speaker", "អ្នកសម្រាយរឿង")
-                if current_speaker not in role_options:
-                    current_speaker = "អ្នកសម្រាយរឿង"
-                st.session_state.auto_subtitles[idx]["speaker"] = st.selectbox(
-                    f"Role #{idx+1}", role_options,
-                    index=role_options.index(current_speaker),
-                    key=f"r_{idx}"
-                )
-            with c4:
-                st.session_state.auto_subtitles[idx]["khmer"] = st.text_area(
-                    f"Khmer Script #{idx+1}", sub["khmer"], key=f"k_{idx}", height=60
-                )
+        with st.expander(f"📝 Script Editor & Subtitles ({len(st.session_state.auto_subtitles)} lines) - Click to Open/Close", expanded=False):
+            st.markdown("💡 *កែសម្រួលអត្ថបទ ម៉ោង ឬតួអង្គតាមតម្រូវការ៖*")
+            
+            role_options = ["អ្នកសម្រាយរឿង", "តួប្រុស", "តួស្រី", "តួចាស់/ព្រឹទ្ធាចារ្យ", "តួអង្គរងផ្សេងៗ"]
+            
+            for idx, sub in enumerate(st.session_state.auto_subtitles):
+                c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
+                with c1:
+                    st.session_state.auto_subtitles[idx]["time_sec"] = st.number_input(
+                        f"Start #{idx+1}", value=sub["time_sec"], step=0.1, key=f"s_{idx}"
+                    )
+                with c2:
+                    st.session_state.auto_subtitles[idx]["duration"] = st.number_input(
+                        f"Dur #{idx+1}", value=sub["duration"], step=0.1, key=f"d_{idx}"
+                    )
+                with c3:
+                    current_speaker = sub.get("speaker", "អ្នកសម្រាយរឿង")
+                    if current_speaker not in role_options:
+                        current_speaker = "អ្នកសម្រាយរឿង"
+                    st.session_state.auto_subtitles[idx]["speaker"] = st.selectbox(
+                        f"Role #{idx+1}", role_options,
+                        index=role_options.index(current_speaker),
+                        key=f"r_{idx}"
+                    )
+                with c4:
+                    st.session_state.auto_subtitles[idx]["khmer"] = st.text_area(
+                        f"Khmer Script #{idx+1}", sub["khmer"], key=f"k_{idx}", height=60
+                    )
+                st.markdown("---")
                 
-        st.markdown("---")
         st.markdown("### 🚀 Export & Preview Pro Video")
         
         if st.button("🎬 Render & Preview Final Video (Ultrafast)", use_container_width=True):
@@ -400,18 +402,14 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Applying Stable Compact Blur & Rendering Video...")
+                        status_text.text("⏳ Rendering Video with High Speed...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
                         video_filters = []
-                        if enable_blur:
-                            # STABLE COMPACT BLUR FILTER: Uses safe boxblur expression directly on the text box region
-                            video_filters.append("boxblur=enable='between(t,0,99999)':lr=3:lp=2:x=iw*0.2:y=ih*0.80:w=iw*0.6:h=ih*0.08")
-                            
                         if burn_subtitles:
                             escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
-                            video_filters.append(f"subtitles='{escaped_srt_path}':force_style='FontName=Sans,FontSize=15,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=1,Outline=1,Shadow=0,Alignment=2'")
+                            video_filters.append(f"subtitles='{escaped_srt_path}':force_style='FontName=Sans,FontSize=16,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=1,Outline=1,Shadow=0,Alignment=2'")
                             
                         final_vf = ",".join(video_filters) if video_filters else None
                         
@@ -466,6 +464,7 @@ with col_right:
                         ffmpeg_cmd.extend([
                             "-c:v", "libx264",
                             "-preset", "ultrafast",
+                            "-crf", "28",
                             "-c:a", "aac",
                             output_video_path
                         ])
@@ -474,8 +473,8 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Video Rendered Successfully!")
-                            st.success("✅ បាន Render រួចរាល់ដោយជោគជ័យ! គ្មាន Error ទៀតទេ អ្នកអាចចុច Play មើល និង Download វីដេអូបានភ្លាមៗ។")
+                            status_text.text("🎉 Fast Render Completed Successfully!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់ដោយជោគជ័យ និងគ្មាន Error ទៀតទេ! អ្នកអាចចុច Play មើល និង Download បានភ្លាមៗ។")
                             
                             st.session_state.rendered_video_path = output_video_path
                             st.rerun()
