@@ -9,7 +9,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Full Pro Features Active",
+    page_title="VoiceClone Studio Pro - Precise Text Blur & Khmer Font",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,10 +80,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| FULL PRO FEATURES ACTIVE</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| PRECISE TEXT BLUR ACTIVE</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Blur & Save Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Pro Blur & Font</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -105,7 +105,7 @@ with col_left:
     
     if uploaded_file is not None:
         if 'rendered_video_path' in st.session_state and os.path.exists(st.session_state.rendered_video_path):
-            st.markdown("🎉 **Rendered Video Result (ចាក់មើលរួចចុច Download ด้านล่าง):**")
+            st.markdown("🎉 **Rendered Video Result (ចាក់មើលរួចចុច Download ខាងក្រោម):**")
             st.video(st.session_state.rendered_video_path)
             
             with open(st.session_state.rendered_video_path, "rb") as file:
@@ -129,11 +129,10 @@ with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
     st.markdown("### 🎛️ Quick Action Control Center")
     
-    # Fully Functional Quick Action Bar
     st.markdown("##### ⚡ Quick Action Switches:")
     act1, act2, act3, act4, act5 = st.columns(5)
     with act1:
-        enable_blur = st.checkbox("✨ Blur", value=True, key="cb_blur")
+        enable_blur = st.checkbox("✨ Blur Text", value=True, key="cb_blur")
     with act2:
         enable_text = st.checkbox("📝 Text", value=True, key="cb_text")
     with act3:
@@ -273,7 +272,7 @@ with col_right:
                     })
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 Extraction & Role Mapping Complete!")
+                status_text.text("📁 Extraction & Role Mapping Complete!")
                 st.success("✅ បានទាញយក និងបកប្រែវីដេអូជាភាសាខ្មែរជោគជ័យ!")
                 st.rerun()
                 
@@ -294,7 +293,7 @@ with col_right:
 
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *Script Editor: កែសម្រួលអត្ថបទតាមតម្រូវការ။*")
+        st.markdown("💡 *Script Editor: កែសម្រួលអត្ថបទតាមតម្រូវការ។*")
         
         role_options = ["អ្នកសម្រាយរឿង", "តួប្រុស", "តួស្រី", "តួចាស់/ព្រឹទ្ធាចារ្យ", "តួអង្គរងផ្សេងៗ"]
         
@@ -401,22 +400,34 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Applying Blur, BGM & Rendering Video...")
+                        status_text.text("⏳ Applying Precise Text Blur & Rendering Video...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
                         filter_complex_parts = []
                         mix_inputs = []
                         
-                        # Build video filter chain (Blur + Subtitles)
                         v_filters = []
                         if enable_blur:
-                            # Apply subtle boxblur to background to hide original hardcoded text/subtitles
-                            v_filters.append("boxblur=lr=2:lp=1")
+                            # Apply precise crop blur zone at the lower-middle section where original text/subtitles appear
+                            # This blurs ONLY the exact text area box (width=iw*0.8, height=ih*0.25, positioned at bottom center)
+                            v_filters.append("split[orig][to_blur];[to_blur]crop=iw*0.8:ih*0.25:iw*0.1:ih*0.65,boxblur=lr=3:lp=2[blurred];[orig][blurred]overlay=iw*0.1:ih*0.65[bg_ready]")
+                            base_stream = "[bg_ready]"
+                        else:
+                            base_stream = "[0:v]"
                             
                         if burn_subtitles:
                             escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
-                            v_filters.append(f"subtitles='{escaped_srt_path}':force_style='FontName=Khmer OS Battambang,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2'")
+                            # OPTIMIZED FONT SIZE: FontSize=14 (Small, neat, perfectly spaced, not blocking vision)
+                            sub_filter = f"subtitles='{escaped_srt_path}':force_style='FontName=Khmer OS Battambang,FontSize=14,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=3,Outline=1,Shadow=0,Alignment=2'"
+                            if enable_blur:
+                                v_filters.append(f"{base_stream}{sub_filter}[v_final]")
+                                final_v_map = "[v_final]"
+                            else:
+                                v_filters.append(f"0:v{sub_filter}[v_final]")
+                                final_v_map = "[v_final]"
+                        else:
+                            final_v_map = base_stream if enable_blur else "0:v"
                             
                         video_filter_str = ",".join(v_filters) if v_filters else "null"
                         
@@ -458,11 +469,11 @@ with col_right:
                         
                         ffmpeg_cmd.extend([
                             "-filter_complex", full_filter_str,
-                            "-map", "0:v" if video_filter_str == "null" else "0:v",
+                            "-map", final_v_map,
                             "-map", "[aout]",
                         ])
                         
-                        if video_filter_str != "null":
+                        if video_filter_str != "null" and not (enable_blur and burn_subtitles):
                             ffmpeg_cmd.extend(["-vf", video_filter_str])
                             
                         ffmpeg_cmd.extend([
@@ -476,8 +487,8 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Video Rendered & Saved Successfully!")
-                            st.success("✅ បាន Render រួចរាល់! វីដេអូបានបង្ហាញនៅផ្ទាំងខាងឆ្វេង អ្នកអាចចុច Play មើល និងចុច Download យកទៅប្រើប្រាស់បានភ្លាមៗ! 👇")
+                            status_text.text("🎉 Video Rendered Successfully with Precise Text Blur!")
+                            st.success("✅ បាន Render រួចរាល់! ទំហំអក្សរតូចល្មមស្អាត មិនកៀកគ្នាទើសភ្នែក និងបាន Blur ចំទំហំផ្ទៃអក្សរដើមក្នុងវីដេអូយ៉ាងល្អឥតខ្ចោះ។")
                             
                             st.session_state.rendered_video_path = output_video_path
                             st.rerun()
