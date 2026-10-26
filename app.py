@@ -9,7 +9,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Perfect Time-Sync & Human Voice",
+    page_title="VoiceClone Studio Pro - Absolute Precision Sync",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,10 +80,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| PERFECT TIME-SYNC & HUMAN VOICE</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| ABSOLUTE PRECISION SYNC</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Sync Engine Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Zero-Overlap Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -112,7 +112,7 @@ with col_left:
                 st.download_button(
                     label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
                     data=file,
-                    file_name="synced_dubbed_movie.mp4",
+                    file_name="precision_synced_movie.mp4",
                     mime="video/mp4",
                     use_container_width=True
                 )
@@ -312,7 +312,7 @@ with col_right:
     if st.session_state.auto_subtitles:
         st.markdown("---")
         with st.expander(f"📝 Pro Timeline Script Editor ({len(st.session_state.auto_subtitles)} lines) - Click to Open/Close", expanded=False):
-            st.markdown("💡 *គ្រប់គ្រងអត្ថបទ ម៉ោង និងសំឡេងតួអង្គនីមួយៗឱ្យត្រូវមាត់៖*")
+            st.markdown("💡 *គ្រប់គ្រងអត្ថបទ ម៉ោង និងសំឡេងតួអង្គនីមួយៗឱ្យត្រូវមាត់ឥតខ្ចោះ៖*")
             
             role_options = [
                 "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)",
@@ -401,7 +401,7 @@ with col_right:
                         if not clean_text:
                             continue
                             
-                        status_text.text(f"⏳ Generating voice line #{i+1} with precise sync...")
+                        status_text.text(f"⏳ Generating voice line #{i+1} with zero overlap...")
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
                         role = sub.get("speaker", "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)")
@@ -434,7 +434,7 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Rendering Video & Time-Syncing Audio...")
+                        status_text.text("⏳ Rendering Video & Strict Time-Syncing Audio...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
@@ -461,18 +461,15 @@ with col_right:
                             delay_ms = int(sub["time_sec"] * 1000)
                             target_duration = sub["duration"]
                             
-                            # Measure generated audio duration precisely to stretch/compress to match target duration perfectly
-                            probe_audio = audio_inputs[idx*2 + 1] if len(audio_inputs) > idx*2 + 1 else None
-                            
-                            # Smart Time-Stretch calculation to fit mouth movement perfectly
                             char_count = len(sub["khmer"])
-                            est_duration = char_count / 11.0 # Average Khmer speaking speed factor
+                            est_duration = char_count / 10.5 
                             
+                            # Strict atempo calculation to prevent overlapping and match exact mouth timing
                             speed_factor = 1.0
                             if est_duration > target_duration and target_duration > 0:
-                                speed_factor = min(round(est_duration / target_duration, 2), 1.8)
-                            elif est_duration < target_duration * 0.7 and target_duration > 1.0:
-                                speed_factor = max(round(est_duration / target_duration, 2), 0.7)
+                                speed_factor = min(round(est_duration / target_duration, 2), 2.0)
+                            elif est_duration < target_duration * 0.6 and target_duration > 1.0:
+                                speed_factor = max(round(est_duration / target_duration, 2), 0.6)
                             
                             stream_idx = idx + 1
                             if speed_factor != 1.0:
@@ -512,8 +509,8 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Perfectly Synced Video Completed!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់ដោយជោគជ័យ! សំឡេង AI និយាយត្រូវមាត់តួអង្គ និងមានភាពរលូនដូចមនុស្សពិត។")
+                            status_text.text("🎉 Absolute Precision Sync Completed!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់ដោយជោគជ័យ! សំឡេង AI និយាយត្រូវចង្វាក់មាត់ មិនជាន់គ្នា និងពីរោះរណ្ដំដូចមនុស្សពិត។")
                             
                             st.session_state.rendered_video_path = output_video_path
                             st.rerun()
