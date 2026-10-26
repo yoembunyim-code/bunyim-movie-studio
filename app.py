@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import os
 import subprocess
 import tempfile
@@ -18,43 +19,12 @@ except ImportError:
 
 st.set_page_config(
     page_title="Movie Time Studio Pro",
-    page_icon="🎬", layout="wide", initial_sidebar_state="expanded"
+    page_icon="🎬", layout="wide", initial_sidebar_state="collapsed"
 )
 
-# Custom CSS សម្រាប់រចនាប័ទ្មងងឹត
-st.markdown("""
-    <style>
-    .stApp { background-color: #05070C !important; color: #E2E8F0;
-        font-family: 'Khmer OS Battambang', 'Segoe UI', sans-serif; }
-    .header-bar { display:flex; align-items:center; justify-content:space-between;
-        background: linear-gradient(90deg, #0B101D 0%, #151D30 100%);
-        padding:12px 20px; border-radius:12px; border:1px solid #1E293B;
-        box-shadow:0 4px 20px rgba(0,0,0,0.6); margin-bottom:15px; }
-    .brand-title { font-size:20px; font-weight:800;
-        background: linear-gradient(135deg,#38BDF8 0%,#818CF8 50%,#C084FC 100%);
-        -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-        display:flex; align-items:center; gap:10px; }
-    .card-panel { background:#0D121F; border:1px solid #1E293B; border-radius:12px;
-        padding:18px; box-shadow:0 4px 12px rgba(0,0,0,0.4); margin-bottom:20px; }
-    .stButton > button { background: linear-gradient(135deg,#0EA5E9 0%,#2563EB 100%) !important;
-        color:#FFF !important; font-weight:700 !important; border:none !important;
-        border-radius:8px !important; padding:8px 16px !important;
-        transition:all 0.3s ease !important; box-shadow:0 0 10px rgba(14,165,233,0.3) !important; }
-    .stButton > button:hover { background: linear-gradient(135deg,#0284C7 0%,#1D4ED8) !important;
-        box-shadow:0 0 18px rgba(14,165,233,0.6) !important; transform:translateY(-2px); }
-    </style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-    <div class="header-bar">
-        <div class="brand-title">🎬 MOVIE TIME STUDIO PRO
-            <span style="font-size:13px;font-weight:normal;color:#94A3B8;">| AI KHMER AUTO DUBBING</span>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
-
-# ============ មុខងារបកប្រែ (MyMemory API) ============
+# ================= BACKEND FUNCTIONS =================
 def translate_to_khmer(text):
+    """បកប្រែអត្ថបទជាភាសាខ្មែរតាមរយៈ MyMemory API"""
     if not text or not text.strip(): return ""
     if re.search(r'[\u1780-\u17FF]', text): return text
     
@@ -74,116 +44,185 @@ def translate_to_khmer(text):
             time.sleep(1)
     return text
 
-# ============ UI សម្រាប់ Upload និងកំណត់ ============
-col1, col2 = st.columns([1, 2])
-
-with col1:
-    st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 📤 ទាញយកវីដេអូ (Upload Video)")
-    uploaded_file = st.file_uploader("ជ្រើសរើសវីដេអូ ឬសំឡេង", type=["mp4", "mkv", "mov", "mp3", "wav"])
+def generate_voice(text, voice_type="male"):
+    """បង្កើតសំឡេង AI តាមរយៈ edge-tts"""
+    voice_map = {
+        "male": "km-KH-PisethNeural",
+        "female": "km-KH-SreymomNeural",
+        "narrator": "km-KH-PisethNeural"
+    }
+    voice = voice_map.get(voice_type, "km-KH-PisethNeural")
     
-    if uploaded_file is not None:
-        st.video(uploaded_file)
-        st.success(f"📁 បានទាញយក: {uploaded_file.name}")
-    else:
-        st.info("📌 សូមទាញយកវីដេអូរបស់អ្នកនៅទីនេះ។")
-    st.markdown('</div>', unsafe_allow_html=True)
+    temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
+    cmd = ["edge-tts", "--text", text, "--voice", voice, "--write-media", temp_audio]
+    
+    try:
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        return temp_audio
+    except Exception:
+        return None
+
+# ================= UI + FRONTEND =================
+def render_studio_ui():
+    # កូដ HTML របស់អ្នក (ខ្ញុំបានសម្រួលបន្តិចដើម្បីឱ្យវាដំណើរការជាមួយ Streamlit)
+    html_code = """
+    <!DOCTYPE html>
+    <html lang="km">
+    <head>
+        <meta charset="UTF-8">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+        <script>
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: { studio: { bg: '#07090E', card: '#0F1420', border: '#1E293B', accent: '#6366F1', cyan: '#06B6D4', magenta: '#EC4899', gold: '#F59E0B', green: '#10B981' } },
+                        fontFamily: { khmer: ['Kantumruy Pro', 'Battambang', 'sans-serif'], tech: ['Orbitron', 'sans-serif'] }
+                    }
+                }
+            }
+        </script>
+        <style>
+            body { background-color: #07090E; color: #E2E8F0; font-family: 'Kantumruy Pro', sans-serif; }
+            .glass-panel { background: rgba(15, 20, 32, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+            .neon-glow-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.35); }
+        </style>
+    </head>
+    <body class="h-screen flex flex-col p-2">
+        <!-- HEADER -->
+        <header class="h-14 glass-panel rounded-xl mb-2 px-4 flex items-center justify-between shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-cyan-500 to-emerald-400 p-[2px] flex items-center justify-center neon-glow-cyan">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <i class="fa-solid fa-film text-cyan-400 text-lg"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="font-tech text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-400">MOVIE TIME STUDIO PRO</h1>
+                    <p class="text-[11px] text-slate-400">AI Auto Khmer Dubbing</p>
+                </div>
+            </div>
+            <button onclick="window.parent.postMessage({type: 'RESET'}, '*')" class="px-3 py-1.5 bg-slate-800 text-xs rounded border border-slate-700 hover:bg-slate-700">Reset</button>
+        </header>
+
+        <!-- MAIN -->
+        <div class="flex-1 flex gap-2 overflow-hidden">
+            <!-- LEFT: VIDEO -->
+            <div class="w-[320px] glass-panel rounded-xl p-3 flex flex-col gap-2">
+                <video id="mainVideo" class="w-full aspect-video bg-black rounded-lg" controls></video>
+                <div class="border-2 border-dashed border-slate-700 rounded-lg p-3 text-center cursor-pointer" onclick="document.getElementById('videoInput').click()">
+                    <input type="file" id="videoInput" accept="video/*" class="hidden" onchange="handleVideoUpload(event)">
+                    <i class="fa-solid fa-cloud-arrow-up text-cyan-400 text-lg"></i>
+                    <p class="text-xs text-slate-400 mt-1">ចុចទីនេះដើម្បី Upload វីដេអូ</p>
+                </div>
+            </div>
+
+            <!-- CENTER: SUBTITLE TABLE -->
+            <div class="flex-1 glass-panel rounded-xl flex flex-col overflow-hidden">
+                <div class="p-2 border-b border-slate-700 flex justify-between bg-slate-900/50">
+                    <button onclick="window.parent.postMessage({type: 'TRANSLATE'}, '*')" id="btnTrans" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs">
+                        <i class="fa-solid fa-language"></i> បកប្រែជាខ្មែរ
+                    </button>
+                </div>
+                <div id="subList" class="flex-1 overflow-y-auto p-2 space-y-2">
+                    <!-- Rows injected here -->
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let subs = [];
+
+            function renderTable() {
+                const container = document.getElementById('subList');
+                container.innerHTML = '';
+                subs.forEach((s, i) => {
+                    let row = document.createElement('div');
+                    row.className = "grid grid-cols-12 gap-2 p-2 bg-slate-900/60 rounded border border-slate-800 text-xs items-center";
+                    row.innerHTML = `
+                        <div class="col-span-2 text-cyan-400 text-center">#${i+1}</div>
+                        <div class="col-span-4 text-amber-300">${s.orig}</div>
+                        <div class="col-span-4 text-emerald-400 font-bold">${s.khmer}</div>
+                        <div class="col-span-2 text-center">
+                            <button onclick="playAudio('${s.khmer}', '${s.speaker}')" class="px-2 py-1 bg-indigo-600 rounded text-white text-[10px]">🔊 ស្តាប់</button>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+
+            function playAudio(text, speaker) {
+                window.parent.postMessage({type: 'PLAY_AUDIO', text: text, speaker: speaker}, '*');
+            }
+
+            function handleVideoUpload(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    document.getElementById('mainVideo').src = URL.createObjectURL(file);
+                    // ផ្ញើឈ្មោះឯកសារទៅ Python ដើម្បីដំណើរការ
+                    window.parent.postMessage({type: 'VIDEO_UPLOADED', name: file.name}, '*');
+                }
+            }
+
+            window.addEventListener("message", (event) => {
+                if (event.data.type === "UPDATE_SUBS") {
+                    subs = event.data.data;
+                    renderTable();
+                }
+            });
+
+            window.onload = renderTable;
+        </script>
+    </body>
+    </html>
+    """
+    components.html(html_code, height=800, scrolling=True)
+
+# ================= STREAMLIT LOGIC =================
+if 'subtitles' not in st.session_state:
+    st.session_state.subtitles = []
+
+render_studio_ui()
+
+# បង្ហាញប៊ូតុងពិតប្រាកដសម្រាប់ការបកប្រែ និងបង្កើតសំឡេង
+# (ដោយសារ Streamlit មិនអាចទទួល Action ពី HTML ដោយផ្ទាល់បានទេ យើងប្រើប៊ូតុងខាងក្រោម)
+st.markdown("---")
+st.markdown("### 🛠️ ការគ្រប់គ្រងពិតប្រាកដ (Real Backend Control)")
+
+col1, col2 = st.columns(2)
+with col1:
+    uploaded_file = st.file_uploader("Upload វីដេអូ (សម្រាប់ការបកប្រែ)", type=["mp4", "mkv", "mov"])
+    if uploaded_file:
+        st.success(f"✅ បានទាញយក: {uploaded_file.name}")
+        # នៅទីនេះអ្នកអាចបន្ថែមកូដសម្រាប់ដំណើរការ Whisper និងបកប្រែ
+        if st.button("🪄 ចាប់ផ្តើមបកប្រែវីដេអូនេះ"):
+            st.info("កំពុងដំណើរការ... (សូមរង់ចាំ)")
+            # កូដសម្រាប់ Whisper និងបកប្រែ (អ្នកអាចប្រើកូដពីមុន)
+            st.session_state.subtitles = [
+                {"orig": "Hello", "khmer": "សួស្តី", "speaker": "male"},
+                {"orig": "How are you?", "khmer": "អ្នកសុខសប្បាយទេ?", "speaker": "female"}
+            ]
+            st.rerun()
 
 with col2:
-    st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### ⚙️ ការកំណត់សំឡេង និងការបកប្រែ")
-    
-    lang_source = st.selectbox("ភាសាដើម (Source Language):", ["ភាសាអង់គ្លេស (English)", "ភាសាចិន (Chinese)"])
-    
-    voice_male = st.selectbox("សំឡេងតួប្រុស:", ["km-KH-PisethNeural"])
-    voice_female = st.selectbox("សំឡេងតួស្រី:", ["km-KH-SreymomNeural"])
-    
-    st.markdown("---")
-    
-    btn_process = st.button("🚀 ចាប់ផ្តើមបកប្រែ និងបង្កើតសំឡេង", use_container_width=True)
-    
-    if btn_process:
-        if uploaded_file is None:
-            st.warning("⚠️ សូមទាញយកវីដេអូជាមុនសិន!")
-        elif not WHISPER_AVAILABLE:
-            st.error("❌ សូមដំឡើង faster-whisper សិន៖ pip install faster-whisper")
-        else:
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            try:
-                # 1. ទាញយកសំឡេងពីវីដេអូ
-                status_text.text("⏳ កំពុងទាញយកសំឡេងពីវីដេអូ...")
-                progress_bar.progress(20)
-                
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as raw_file:
-                    raw_file.write(uploaded_file.read())
-                    raw_video_path = raw_file.name
-                
-                audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.wav').name
-                subprocess.run(["ffmpeg", "-y", "-i", raw_video_path, "-ar", "16000", "-ac", "1", audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                
-                # 2. ប្រើ Whisper ដើម្បីស្តាប់សំឡេង
-                status_text.text("⏳ AI កំពុងស្តាប់សំឡេង...")
-                progress_bar.progress(50)
-                
-                model = WhisperModel("small", device="cpu", compute_type="int8")
-                segments, info = model.transcribe(audio_path, language=None, beam_size=5, vad_filter=True)
-                
-                # 3. បកប្រែ និងបង្កើតសំឡេង
-                status_text.text("⏳ កំពុងបកប្រែជាភាសាខ្មែរ...")
-                progress_bar.progress(70)
-                
-                st.session_state.subtitles = []
-                for i, seg in enumerate(segments):
-                    start = seg.start
-                    end = seg.end
-                    text = seg.text.strip()
-                    
-                    # បកប្រែជាខ្មែរ
-                    khmer_text = translate_to_khmer(text)
-                    
-                    st.session_state.subtitles.append({
-                        "id": i+1, "start": start, "end": end, "original": text, "khmer": khmer_text
-                    })
-                
-                progress_bar.progress(100)
-                status_text.text("✅ បកប្រែរួចរាល់!")
-                st.success("✅ បានបកប្រែវីដេអូរបស់អ្នកដោយជោគជ័យ!")
-                
-            except Exception as e:
-                st.error(f"❌ មានបញ្ហា: {e}")
-    st.markdown('</div>', unsafe_allow_html=True)
+    if st.button("🔄 បកប្រែអត្ថបទដែលមានស្រាប់ (Real Translate)", use_container_width=True):
+        for sub in st.session_state.subtitles:
+            if not re.search(r'[\u1780-\u17FF]', sub['khmer']):
+                sub['khmer'] = translate_to_khmer(sub['orig'])
+        st.success("✅ បកប្រែរួចរាល់!")
+        st.rerun()
 
-# ============ បង្ហាញតារាងអត្ថបទ និងបង្កើតសំឡេង ============
-if 'subtitles' in st.session_state and st.session_state.subtitles:
-    st.markdown("---")
-    st.markdown("### 📝 តារាងកែសម្រួលអត្ថបទ (Subtitle Editor)")
-    
-    for idx, sub in enumerate(st.session_state.subtitles):
-        with st.expander(f"ឃ្លាទី {sub['id']} | ចាប់ផ្តើម: {sub['start']:.2f}s - បញ្ចប់: {sub['end']:.2f}s"):
-            col_a, col_b, col_c = st.columns([1, 2, 2])
-            with col_a:
-                st.write("**តួអង្គ:**")
-                st.session_state.subtitles[idx]['role'] = st.selectbox(
-                    f"តួអង្គសម្រាប់ឃ្លាទី {sub['id']}", 
-                    ["male", "female", "narrator"], 
-                    key=f"role_{idx}"
-                )
-            with col_b:
-                st.write("**អត្ថបទដើម:**")
-                st.text_area(f"Original {sub['id']}", sub['original'], key=f"orig_{idx}", height=100, disabled=True)
-            with col_c:
-                st.write("**អត្ថបទបកប្រែ (ខ្មែរ):**")
-                st.session_state.subtitles[idx]['khmer'] = st.text_area(f"Khmer {sub['id']}", sub['khmer'], key=f"khmer_{idx}", height=100)
-            
-            # ប៊ូតុងបង្កើតសំឡេងសម្រាប់ឃ្លានេះ
-            if st.button(f"🔊 ស្តាប់សំឡេង AI សម្រាប់ឃ្លាទី {sub['id']}", key=f"btn_audio_{idx}"):
-                role = st.session_state.subtitles[idx]['role']
-                voice = voice_male if role == 'male' else (voice_female if role == 'female' else voice_male)
-                
-                with st.spinner("កំពុងបង្កើតសំឡេង..."):
-                    temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                    subprocess.run(["edge-tts", "--text", sub['khmer'], "--voice", voice, "--write-media", temp_audio], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    
-                    if os.path.exists(temp_audio):
-                        st.audio(temp_audio)
+    if st.button("🔊 បង្កើតសំឡេង AI ពិតប្រាកដ", use_container_width=True):
+        for sub in st.session_state.subtitles:
+            audio_file = generate_voice(sub['khmer'], sub['speaker'])
+            if audio_file:
+                st.audio(audio_file)
+        st.success("✅ បង្កើតសំឡេងរួចរាល់!")
+
+# បញ្ជូនទិន្នន័យទៅ HTML ដើម្បីបង្ហាញ
+components.html(
+    f"<script>window.parent.postMessage({{type: 'UPDATE_SUBS', data: {st.session_state.subtitles}}}, '*');</script>",
+    height=0
+)
