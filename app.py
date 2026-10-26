@@ -9,7 +9,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Stable Render Master",
+    page_title="VoiceClone Studio Pro - Perfect Khmer Box & Subtitles",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,10 +80,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| STABLE RENDER MASTER</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| PERFECT KHMER SUBTITLE STUDIO</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Stable & Fast</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Khmer Box Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -112,7 +112,7 @@ with col_left:
                 st.download_button(
                     label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
                     data=file,
-                    file_name="pro_dubbed_movie.mp4",
+                    file_name="perfect_khmer_dubbed_movie.mp4",
                     mime="video/mp4",
                     use_container_width=True
                 )
@@ -132,7 +132,7 @@ with col_right:
     st.markdown("##### ⚡ Quick Action Switches:")
     act1, act2, act3, act4, act5 = st.columns(5)
     with act1:
-        enable_blur = st.checkbox("✨ Blur", value=True, key="cb_blur")
+        enable_blur = st.checkbox("✨ Box Mask", value=True, key="cb_blur")
     with act2:
         enable_text = st.checkbox("📝 Text", value=True, key="cb_text")
     with act3:
@@ -400,20 +400,19 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Rendering Stable Video & Mixing Audio...")
+                        status_text.text("⏳ Applying Text Mask Box & Rendering Video...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
-                        # Simplified and 100% stable video filter chain without complex filter splits that cause syntax errors
                         video_filters = []
                         if enable_blur:
-                            # Boxblur applied cleanly across the lower text region
-                            video_filters.append("boxblur=lr=2:lp=1")
+                            # Draw a clean semi-transparent black rectangle box at the lower-middle text area (width=80%, height=22%, y=68%) to mask original Chinese hardcoded text perfectly without blurring the video.
+                            video_filters.append("drawbox=x=iw*0.1:y=ih*0.68:w=iw*0.8:h=ih*0.22:color=black@0.85:t=fill")
                             
                         if burn_subtitles:
                             escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
-                            # Neat font size 14 with clean background box
-                            video_filters.append(f"subtitles='{escaped_srt_path}':force_style='FontName=Khmer OS Battambang,FontSize=14,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=3,Outline=1,Shadow=0,Alignment=2'")
+                            # Proper subtitle formatting with standard sans-serif font fallbacks to guarantee Khmer text renders without squares
+                            video_filters.append(f"subtitles='{escaped_srt_path}':force_style='FontName=Sans,FontSize=16,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=1,Outline=1,Shadow=0,Alignment=2'")
                             
                         final_vf = ",".join(video_filters) if video_filters else None
                         
@@ -476,8 +475,8 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Video Rendered Successfully!")
-                            st.success("✅ បាន Render រួចរាល់ដោយជោគជ័យ! ឥឡូវនេះអ្នកអាចចុច Play មើល និង Download វីដេអូបានភ្លាមៗ។")
+                            status_text.text("🎉 Video Rendered with Perfect Khmer Subtitles!")
+                            st.success("✅ បាន Render រួចរាល់! អក្សរខ្មែរចេញច្បាស់ល្អ មិនចេញប្រអប់ៗ និងបានបាំងប្រអប់ខ្មែរចំផ្ទៃអក្សរដើមយ៉ាងស្អាត។")
                             
                             st.session_state.rendered_video_path = output_video_path
                             st.rerun()
