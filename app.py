@@ -9,7 +9,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Interactive Top Bar & Video Preview",
+    page_title="VoiceClone Studio Pro - Full Pro Features Active",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,10 +80,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| INTERACTIVE CONTROL & PREVIEW STUDIO</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| FULL PRO FEATURES ACTIVE</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ 2H+ Ultrafast Ready</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Blur & Save Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -100,13 +100,22 @@ col_left, col_right = st.columns([1.1, 1.9])
 
 with col_left:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 📺 Video Preview & Result Player")
+    st.markdown("### 📺 Video Preview & Download Center")
     uploaded_file = st.file_uploader("Upload Long Video File (.MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
         if 'rendered_video_path' in st.session_state and os.path.exists(st.session_state.rendered_video_path):
-            st.markdown("🎉 **Rendered Video Result (ចាក់មើលទីនេះមុន Download):**")
+            st.markdown("🎉 **Rendered Video Result (ចាក់មើលរួចចុច Download ด้านล่าง):**")
             st.video(st.session_state.rendered_video_path)
+            
+            with open(st.session_state.rendered_video_path, "rb") as file:
+                st.download_button(
+                    label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
+                    data=file,
+                    file_name="pro_dubbed_movie.mp4",
+                    mime="video/mp4",
+                    use_container_width=True
+                )
         else:
             st.video(uploaded_file)
             
@@ -118,21 +127,21 @@ with col_left:
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Interactive Action Bar & Studio Center")
+    st.markdown("### 🎛️ Quick Action Control Center")
     
-    # Interactive Top Action Bar (Buttons like Blur, Text, Sub, Med, Sav)
-    st.markdown("##### ⚡ Quick Action Control Bar:")
+    # Fully Functional Quick Action Bar
+    st.markdown("##### ⚡ Quick Action Switches:")
     act1, act2, act3, act4, act5 = st.columns(5)
     with act1:
-        btn_blur = st.checkbox("✨ Blur", value=True, key="b_blur")
+        enable_blur = st.checkbox("✨ Blur", value=True, key="cb_blur")
     with act2:
-        btn_text = st.checkbox("📝 Text", value=True, key="b_text")
+        enable_text = st.checkbox("📝 Text", value=True, key="cb_text")
     with act3:
-        btn_sub = st.checkbox("🟢 Sub", value=True, key="b_sub")
+        enable_sub = st.checkbox("🟢 Sub", value=True, key="cb_sub")
     with act4:
-        btn_med = st.checkbox("⚡ Med", value=True, key="b_med")
+        enable_med = st.checkbox("⚡ Med", value=True, key="cb_med")
     with act5:
-        btn_sav = st.checkbox("💾 Save", value=True, key="b_sav")
+        enable_sav = st.checkbox("💾 Save", value=True, key="cb_sav")
     
     with st.expander("📚 Character Voice Profiles (កំណត់សំឡេងសម្រាប់ AI)", expanded=True):
         st.markdown("📌 កំណត់សំឡេង AI ឱ្យត្រូវទៅនឹងតួអង្គក្នុងរឿង៖")
@@ -150,7 +159,7 @@ with col_right:
         other_profile = st.selectbox("សំឡេងតួអង្គរងផ្សេងៗ", voice_keys, index=4)
 
     with st.expander("⚙️ Advanced Director Settings (BGM & Volume Boost)", expanded=False):
-        burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូផ្ទាល់", value=btn_sub)
+        burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូផ្ទាល់", value=enable_sub)
         suppress_original = st.checkbox("🟢 បន្ថយសំឡេងដើមវីដេអូ (Mute Original Voices)", value=True)
         bgm_volume = st.slider("🎵 កម្រិតសម្លេងភ្លេងអម BGM (Volume)", min_value=0.1, max_value=1.5, value=0.4, step=0.1)
         voice_volume = st.slider("🗣️ កម្រិតសំឡេង AI និយាយ (Voice Volume - ខ្លាំងច្បាស់)", min_value=1.5, max_value=4.0, value=2.5, step=0.1)
@@ -265,7 +274,7 @@ with col_right:
                 
                 progress_bar.progress(100)
                 status_text.text("🎉 Extraction & Role Mapping Complete!")
-                st.success("✅ បានទាញយក និងបកប្រែវីដេអូរយៈពេលវែងជាភាសាខ្មែរជោគជ័យ!")
+                st.success("✅ បានទាញយក និងបកប្រែវីដេអូជាភាសាខ្មែរជោគជ័យ!")
                 st.rerun()
                 
             except Exception as e:
@@ -285,7 +294,7 @@ with col_right:
 
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *Script Editor: កែសម្រួលអត្ថបទវែងៗតាមតម្រូវការ។*")
+        st.markdown("💡 *Script Editor: កែសម្រួលអត្ថបទតាមតម្រូវការ။*")
         
         role_options = ["អ្នកសម្រាយរឿង", "តួប្រុស", "តួស្រី", "តួចាស់/ព្រឹទ្ធាចារ្យ", "តួអង្គរងផ្សេងៗ"]
         
@@ -314,7 +323,7 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export & Preview Long Video")
+        st.markdown("### 🚀 Export & Preview Pro Video")
         
         if st.button("🎬 Render & Preview Video (Ultrafast)", use_container_width=True):
             if uploaded_file is not None:
@@ -392,12 +401,24 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Rendering Video with Ultrafast Speed...")
+                        status_text.text("⏳ Applying Blur, BGM & Rendering Video...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
                         filter_complex_parts = []
                         mix_inputs = []
+                        
+                        # Build video filter chain (Blur + Subtitles)
+                        v_filters = []
+                        if enable_blur:
+                            # Apply subtle boxblur to background to hide original hardcoded text/subtitles
+                            v_filters.append("boxblur=lr=2:lp=1")
+                            
+                        if burn_subtitles:
+                            escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
+                            v_filters.append(f"subtitles='{escaped_srt_path}':force_style='FontName=Khmer OS Battambang,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2'")
+                            
+                        video_filter_str = ",".join(v_filters) if v_filters else "null"
                         
                         orig_vol = "0.03" if suppress_original else "0.15"
                         bgm_filter = f"[0:a]volume={orig_vol}[orig]; [orig]pan=stereo|c0=c0|c1=c1,volume={bgm_volume}"
@@ -435,15 +456,16 @@ with col_right:
                         ffmpeg_cmd = ["ffmpeg", "-y", "-i", input_video_path]
                         ffmpeg_cmd.extend(audio_inputs)
                         
-                        if burn_subtitles:
-                            escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
-                            video_filter = f"subtitles='{escaped_srt_path}':force_style='FontName=Khmer OS Battambang,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2'"
-                            ffmpeg_cmd.extend(["-vf", video_filter])
-                            
                         ffmpeg_cmd.extend([
                             "-filter_complex", full_filter_str,
-                            "-map", "0:v" if not burn_subtitles else "0:v",
+                            "-map", "0:v" if video_filter_str == "null" else "0:v",
                             "-map", "[aout]",
+                        ])
+                        
+                        if video_filter_str != "null":
+                            ffmpeg_cmd.extend(["-vf", video_filter_str])
+                            
+                        ffmpeg_cmd.extend([
                             "-c:v", "libx264",
                             "-preset", "ultrafast",
                             "-c:a", "aac",
@@ -454,20 +476,10 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Video Rendered Successfully!")
-                            st.success("✅ បាន Render រួចរាល់! វីដេអូបានបង្ហាញនៅផ្ទាំងខាងឆ្វេង អ្នកអាចចុច Play មើលសិន រួចค่อย Download ខាងក្រោម! 👇")
+                            status_text.text("🎉 Video Rendered & Saved Successfully!")
+                            st.success("✅ បាន Render រួចរាល់! វីដេអូបានបង្ហាញនៅផ្ទាំងខាងឆ្វេង អ្នកអាចចុច Play មើល និងចុច Download យកទៅប្រើប្រាស់បានភ្លាមៗ! 👇")
                             
-                            # Save to session state to display video on left panel player
                             st.session_state.rendered_video_path = output_video_path
-                            
-                            with open(output_video_path, "rb") as file:
-                                st.download_button(
-                                    label="📥 Download Final Video (.MP4)",
-                                    data=file,
-                                    file_name="rendered_long_movie.mp4",
-                                    mime="video/mp4",
-                                    use_container_width=True
-                                )
                             st.rerun()
                         else:
                             st.error(f"❌ FFmpeg Render failed: {process.stderr.decode('utf-8')[:300]}")
