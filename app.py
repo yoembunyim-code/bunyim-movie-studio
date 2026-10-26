@@ -9,7 +9,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Precise Compact Blur",
+    page_title="VoiceClone Studio Pro - Stable Blur Fix",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,10 +80,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| PRECISE COMPACT BLUR STUDIO</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| STABLE BLUR MASTER</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Compact Blur Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Stable Blur Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -112,7 +112,7 @@ with col_left:
                 st.download_button(
                     label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
                     data=file,
-                    file_name="compact_blur_movie.mp4",
+                    file_name="stable_blur_movie.mp4",
                     mime="video/mp4",
                     use_container_width=True
                 )
@@ -400,14 +400,14 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Applying Compact Blur Box & Rendering Video...")
+                        status_text.text("⏳ Applying Stable Compact Blur & Rendering Video...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
                         video_filters = []
                         if enable_blur:
-                            # COMPACT BLUR BOX: Narrow and thin box matching exactly the text footprint (Width=60%, Height=8%, Position Y=80%)
-                            video_filters.append("split[orig][to_blur];[to_blur]crop=iw*0.6:ih*0.08:iw*0.2:ih*0.80,boxblur=lr=3:lp=2[blurred];[orig][blurred]overlay=iw*0.2:ih*0.80")
+                            # STABLE COMPACT BLUR FILTER: Uses safe boxblur expression directly on the text box region
+                            video_filters.append("boxblur=enable='between(t,0,99999)':lr=3:lp=2:x=iw*0.2:y=ih*0.80:w=iw*0.6:h=ih*0.08")
                             
                         if burn_subtitles:
                             escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
@@ -475,7 +475,7 @@ with col_right:
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
                             status_text.text("🎉 Video Rendered Successfully!")
-                            st.success("✅ បាន Render រួចរាល់! ប្រអប់ Blur ឥឡូវនេះមានទំហំតូចល្មមប៉ុនទំហំអក្សរយ៉ាងស្អាត។")
+                            st.success("✅ បាន Render រួចរាល់ដោយជោគជ័យ! គ្មាន Error ទៀតទេ អ្នកអាចចុច Play មើល និង Download វីដេអូបានភ្លាមៗ។")
                             
                             st.session_state.rendered_video_path = output_video_path
                             st.rerun()
