@@ -1,7 +1,8 @@
 streamlit
 faster-whisper
 av<19
-deep-translator
+googletrans==4.0.0-rc1
 edge-tts
 numpy
 scipy
+requests
