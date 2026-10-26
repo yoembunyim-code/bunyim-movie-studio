@@ -9,7 +9,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Long Video & Human-like Voice Master",
+    page_title="VoiceClone Studio Pro - Multi-Role Pro Dashboard",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,16 +80,16 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| 2+ HOURS & HUMAN-LIKE DUBBING</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| MULTI-ROLE PRO DASHBOARD</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Ultra Pro Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Pro Dashboard Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
 
 VOICE_PROFILES = {
-    "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះដូចមនុស្ស)": ("km-KH-PisethNeural", "+0Hz", "+0%"),
+    "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)": ("km-KH-PisethNeural", "+0Hz", "+0%"),
     "តួប្រុស (សំឡេងប្រុសធ្ងន់ច្បាស់មានអំណាច)": ("km-KH-PisethNeural", "-2Hz", "+0%"),
     "តួស្រី (សំឡេងស្រីស្រទន់ពីរោះធម្មជាតិ)": ("km-KH-SreymomNeural", "+2Hz", "+0%"),
     "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំស្ងប់ស្ងាត់)": ("km-KH-PisethNeural", "-6Hz", "-5%"),
@@ -112,7 +112,7 @@ with col_left:
                 st.download_button(
                     label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
                     data=file,
-                    file_name="human_like_dubbed_movie.mp4",
+                    file_name="multirole_dubbed_movie.mp4",
                     mime="video/mp4",
                     use_container_width=True
                 )
@@ -150,8 +150,8 @@ with col_right:
         with tc2:
             trim_duration = st.number_input("រយៈពេលយក (Duration Seconds, 0 = យកដល់ចប់)", min_value=0.0, value=0.0, step=1.0)
 
-    with st.expander("📚 Character Voice Profiles (សំឡេង AI ស្រដៀងមនុស្សពិត)", expanded=True):
-        st.markdown("📌 កំណត់សំឡេង AI បែបធម្មជាតិសម្រាប់តួអង្គ៖")
+    with st.expander("📚 Character Voice Profiles (កំណត់សំឡេង AI តាមតួអង្គ)", expanded=True):
+        st.markdown("📌 កំណត់សំឡេង AI ឱ្យត្រូវទៅនឹងតួប្រុស តួស្រី និងអ្នកសម្រាយរឿង៖")
         
         voice_keys = list(VOICE_PROFILES.keys())
         
@@ -213,22 +213,23 @@ with col_right:
             
             segment = data[start_sample:end_sample]
             if len(segment) == 0:
-                return "អ្នកសម្រាយរឿង"
+                return "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)"
                 
             fft_spectrum = np.abs(np.fft.rfft(segment))
             freqs = np.fft.rfftfreq(len(segment), d=1.0/rate)
             peak_freq = freqs[np.argmax(fft_spectrum)]
             
-            if peak_freq > 185:
-                return "តួស្រី"
-            elif 80 <= peak_freq <= 135:
-                return "តួចាស់/ព្រឹទ្ធាចារ្យ"
-            elif 135 < peak_freq <= 185:
-                return "តួប្រុស"
+            # Intelligent Multi-Role Pitch Detection
+            if peak_freq > 190:
+                return "តួស្រី (សំឡេងស្រីស្រទន់ពីរោះធម្មជាតិ)"
+            elif 85 <= peak_freq <= 130:
+                return "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំស្ងប់ស្ងាត់)"
+            elif 130 < peak_freq <= 190:
+                return "តួប្រុស (សំឡេងប្រុសធ្ងន់ច្បាស់មានអំណាច)"
             else:
-                return "អ្នកសម្រាយរឿង"
+                return "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)"
         except Exception:
-            return "អ្នកសម្រាយរឿង"
+            return "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)"
 
     if btn_extract:
         if uploaded_file is not None:
@@ -236,7 +237,7 @@ with col_right:
             status_text = st.empty()
             
             try:
-                status_text.text("⏳ Preparing long video & trimming...")
+                status_text.text("⏳ Preparing video & trimming...")
                 progress_bar.progress(15)
                 
                 raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
@@ -253,7 +254,7 @@ with col_right:
                 res = subprocess.run(trim_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 input_video_path = trimmed_video_path if res.returncode == 0 and os.path.getsize(trimmed_video_path) > 1000 else raw_video_path
                 
-                status_text.text("⏳ Extracting audio track for long video...")
+                status_text.text("⏳ Extracting audio track...")
                 progress_bar.progress(35)
                 
                 audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
@@ -262,13 +263,13 @@ with col_right:
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-ar", "16000", "-ac", "1", wav_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
-                status_text.text("⏳ Running Whisper AI Speech Recognition (Long-form optimized)...")
+                status_text.text("⏳ Running Whisper AI Speech Recognition...")
                 progress_bar.progress(60)
                 
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
                 
-                status_text.text("⏳ Translating script to Khmer & Analyzing Natural Roles...")
+                status_text.text("⏳ Translating script & Mapping Multi-Roles...")
                 progress_bar.progress(85)
                 
                 st.session_state.auto_subtitles = []
@@ -289,8 +290,8 @@ with col_right:
                     })
                 
                 progress_bar.progress(100)
-                status_text.text("📁 Long Video Extraction & Processing Complete!")
-                st.success("✅ បានទាញយក និងបកប្រែវីដេអូរយៈពេលវែងជាភាសាខ្មែរជោគជ័យ!")
+                status_text.text("📁 Extraction & Multi-Role Mapping Complete!")
+                st.success("✅ បានទាញយក បកប្រែ និងបែងចែកតួអង្គប្រុសស្រីជោគជ័យ!")
                 st.rerun()
                 
             except Exception as e:
@@ -308,13 +309,19 @@ with col_right:
         st.success("✅ Force Translation Finished!")
         st.rerun()
 
-    # COLLAPSIBLE SCRIPT EDITOR BOX
+    # COLLAPSIBLE PRO SCRIPT EDITOR DASHBOARD
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        with st.expander(f"📝 Script Editor & Subtitles ({len(st.session_state.auto_subtitles)} lines) - Click to Open/Close", expanded=False):
-            st.markdown("💡 *កែសម្រួលអត្ថបទ ម៉ោង ឬតួអង្គតាមតម្រូវការ៖*")
+        with st.expander(f"📝 Pro Timeline Script Editor ({len(st.session_state.auto_subtitles)} lines) - Click to Open/Close", expanded=False):
+            st.markdown("💡 *គ្រប់គ្រងអត្ថបទ ម៉ោង និងសំឡេងតួអង្គនីមួយៗ (ប្រុស/ស្រី/សម្រាយ)៖*")
             
-            role_options = ["អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះដូចមនុស្ស)", "តួប្រុស (សំឡេងប្រុសធ្ងន់ច្បាស់មានអំណាច)", "តួស្រី (សំឡេងស្រីស្រទន់ពីរោះធម្មជាតិ)", "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំស្ងប់ស្ងាត់)", "តួអង្គរងផ្សេងៗ"]
+            role_options = [
+                "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)",
+                "តួប្រុស (សំឡេងប្រុសធ្ងន់ច្បាស់មានអំណាច)",
+                "តួស្រី (សំឡេងស្រីស្រទន់ពីរោះធម្មជាតិ)",
+                "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំស្ងប់ស្ងាត់)",
+                "តួអង្គរងផ្សេងៗ"
+            ]
             
             for idx, sub in enumerate(st.session_state.auto_subtitles):
                 c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
@@ -327,9 +334,9 @@ with col_right:
                         f"Dur #{idx+1}", value=sub["duration"], step=0.1, key=f"d_{idx}"
                     )
                 with c3:
-                    current_speaker = sub.get("speaker", "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះដូចមនុស្ស)")
+                    current_speaker = sub.get("speaker", "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)")
                     if current_speaker not in role_options:
-                        current_speaker = "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះដូចមនុស្ស)"
+                        current_speaker = role_options[0]
                     st.session_state.auto_subtitles[idx]["speaker"] = st.selectbox(
                         f"Role #{idx+1}", role_options,
                         index=role_options.index(current_speaker),
@@ -349,7 +356,7 @@ with col_right:
                 status_text = st.empty()
                 
                 try:
-                    status_text.text("⏳ Preparing long video rendering environment...")
+                    status_text.text("⏳ Preparing video rendering environment...")
                     progress_bar.progress(10)
                     
                     raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
@@ -395,10 +402,10 @@ with col_right:
                         if not clean_text:
                             continue
                             
-                        status_text.text(f"⏳ Generating natural human-like voice line #{i+1}...")
+                        status_text.text(f"⏳ Generating voice line #{i+1} with correct role...")
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
-                        role = sub.get("speaker", "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះដូចមនុស្ស)")
+                        role = sub.get("speaker", "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)")
                         if "តួប្រុស" in role:
                             v_name = male_profile
                         elif "តួស្រី" in role:
@@ -428,7 +435,7 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Rendering Long Video & Mixing Natural Audio...")
+                        status_text.text("⏳ Rendering Video & Mixing Multi-Role Audio...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
@@ -499,8 +506,8 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Human-like Dubbed Video Completed Successfully!")
-                            st.success("✅ បាន Render វីដេអូរយៈពេលវែងរួចរាល់ដោយជោគជ័យ! សំឡេង AI ពីរោះធម្មជាតិដូចមនុស្សពិត។")
+                            status_text.text("🎉 Multi-Role Video Completed Successfully!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់ដោយជោគជ័យ! សំឡេងតួប្រុស តួស្រី និងអ្នកសម្រាយរឿង ចែកដាច់ពីគ្នាត្រឹមត្រូវ។")
                             
                             st.session_state.rendered_video_path = output_video_path
                             st.rerun()
