@@ -9,7 +9,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Perfect Khmer Box & Subtitles",
+    page_title="VoiceClone Studio Pro - Custom Blur & Khmer Subtitles",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,10 +80,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| PERFECT KHMER SUBTITLE STUDIO</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| CUSTOM BLUR & SUBTITLE STUDIO</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Khmer Box Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Custom Control Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -112,7 +112,7 @@ with col_left:
                 st.download_button(
                     label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
                     data=file,
-                    file_name="perfect_khmer_dubbed_movie.mp4",
+                    file_name="custom_dubbed_movie.mp4",
                     mime="video/mp4",
                     use_container_width=True
                 )
@@ -132,7 +132,7 @@ with col_right:
     st.markdown("##### ⚡ Quick Action Switches:")
     act1, act2, act3, act4, act5 = st.columns(5)
     with act1:
-        enable_blur = st.checkbox("✨ Box Mask", value=True, key="cb_blur")
+        enable_blur = st.checkbox("✨ Blur", value=True, key="cb_blur")
     with act2:
         enable_text = st.checkbox("📝 Text", value=True, key="cb_text")
     with act3:
@@ -142,7 +142,14 @@ with col_right:
     with act5:
         enable_sav = st.checkbox("💾 Save", value=True, key="cb_sav")
     
-    with st.expander("📚 Character Voice Profiles (កំណត់សំឡេងសម្រាប់ AI)", expanded=True):
+    # Custom Blur Box Sizing Controls (Width, Height, X, Y)
+    with st.expander("🎚️ Custom Blur Box Settings (សារេទំហំប្រអប់ Blur តាមចិត្ត)", expanded=True):
+        st.markdown("📌 កំណត់ទំហំ និងទីតាំងប្រអប់ Blur ឱ្យចំអក្សរចិនដើម៖")
+        blur_w = st.slider("ប្រវែងទទឹងប្រអប់ Blur (Width %)", min_value=30, max_value=100, value=70, step=5)
+        blur_h = st.slider("កម្ពស់ប្រអប់ Blur (Height %)", min_value=5, max_value=30, value=12, step=1)
+        blur_y = st.slider("ទីតាំងបញ្ឈរ (Vertical Y Position %)", min_value=50, max_value=90, value=75, step=1)
+
+    with st.expander("📚 Character Voice Profiles (កំណត់សំឡេងសម្រាប់ AI)", expanded=False):
         st.markdown("📌 កំណត់សំឡេង AI ឱ្យត្រូវទៅនឹងតួអង្គក្នុងរឿង៖")
         
         voice_keys = list(VOICE_PROFILES.keys())
@@ -400,19 +407,24 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Applying Text Mask Box & Rendering Video...")
+                        status_text.text("⏳ Applying Custom Blur Box & Rendering Video...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
                         video_filters = []
                         if enable_blur:
-                            # Draw a clean semi-transparent black rectangle box at the lower-middle text area (width=80%, height=22%, y=68%) to mask original Chinese hardcoded text perfectly without blurring the video.
-                            video_filters.append("drawbox=x=iw*0.1:y=ih*0.68:w=iw*0.8:h=ih*0.22:color=black@0.85:t=fill")
+                            # Calculate custom blur box dimensions based on user slider controls
+                            x_pct = (100 - blur_w) / 2
+                            w_expr = f"iw*{blur_w/100}"
+                            h_expr = f"ih*{blur_h/100}"
+                            x_expr = f"iw*{x_pct/100}"
+                            y_expr = f"ih*{blur_y/100}"
+                            video_filters.append(f"split[orig][to_blur];[to_blur]crop={w_expr}:{h_expr}:{x_expr}:{y_expr},boxblur=lr=3:lp=2[blurred];[orig][blurred]overlay={x_expr}:{y_expr}")
                             
                         if burn_subtitles:
                             escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
-                            # Proper subtitle formatting with standard sans-serif font fallbacks to guarantee Khmer text renders without squares
-                            video_filters.append(f"subtitles='{escaped_srt_path}':force_style='FontName=Sans,FontSize=16,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=1,Outline=1,Shadow=0,Alignment=2'")
+                            # Standardized subtitle styling to ensure Khmer text renders cleanly without block squares
+                            video_filters.append(f"subtitles='{escaped_srt_path}':force_style='FontName=Sans,FontSize=15,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=1,Outline=1,Shadow=0,Alignment=2'")
                             
                         final_vf = ",".join(video_filters) if video_filters else None
                         
@@ -475,8 +487,8 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 Video Rendered with Perfect Khmer Subtitles!")
-                            st.success("✅ បាន Render រួចរាល់! អក្សរខ្មែរចេញច្បាស់ល្អ មិនចេញប្រអប់ៗ និងបានបាំងប្រអប់ខ្មែរចំផ្ទៃអក្សរដើមយ៉ាងស្អាត។")
+                            status_text.text("🎉 Video Rendered with Custom Blur & Subtitles!")
+                            st.success("✅ បាន Render រួចរាល់! ប្រអប់ Blur ត្រូវបានសារេទំហំ និងទីតាំងចំផ្ទៃអក្សរយ៉ាងស្អាត ព្រមទាំងអក្សរខ្មែរចេញច្បាស់ល្អ។")
                             
                             st.session_state.rendered_video_path = output_video_path
                             st.rerun()
