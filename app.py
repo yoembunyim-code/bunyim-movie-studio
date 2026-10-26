@@ -7,9 +7,9 @@ import numpy as np
 import scipy.io.wavfile as wav
 from translate import Translator
 
-# Page Configuration with Large Upload Support
+# Page Configuration with Large Upload Support (2GB Limit)
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Absolute Precision Sync",
+    page_title="VoiceClone Studio Pro - 2GB Large File Master",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,10 +80,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| ABSOLUTE PRECISION SYNC</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| 2GB UPLOAD MASTER</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Zero-Overlap Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ 2GB Limit Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -101,7 +101,7 @@ col_left, col_right = st.columns([1.1, 1.9])
 with col_left:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
     st.markdown("### 📺 Video Preview & Download Center")
-    uploaded_file = st.file_uploader("Upload Long Video File (.MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
+    uploaded_file = st.file_uploader("Upload Long Video File (Up to 2GB .MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
         if 'rendered_video_path' in st.session_state and os.path.exists(st.session_state.rendered_video_path):
@@ -112,7 +112,7 @@ with col_left:
                 st.download_button(
                     label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
                     data=file,
-                    file_name="precision_synced_movie.mp4",
+                    file_name="2gb_dubbed_movie.mp4",
                     mime="video/mp4",
                     use_container_width=True
                 )
@@ -122,7 +122,7 @@ with col_left:
         file_size_mb = uploaded_file.size / (1024 * 1024)
         st.success(f"📁 Loaded: {uploaded_file.name} ({file_size_mb:.2f} MB)")
     else:
-        st.info("📌 Drop your video file here.")
+        st.info("📌 Drop your large video file here (Up to 2GB).")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
@@ -151,7 +151,7 @@ with col_right:
             trim_duration = st.number_input("រយៈពេលយក (Duration Seconds, 0 = យកដល់ចប់)", min_value=0.0, value=0.0, step=1.0)
 
     with st.expander("📚 Character Voice Profiles (កំណត់សំឡេង AI ឱ្យត្រូវមាត់តួអង្គ)", expanded=True):
-        st.markdown("📌 កំណត់សំឡេង AI ឱ្យត្រូវទៅនឹងតួប្រុស តួស្រី និងអ្នកសម្រាយរឿង៖")
+        st.markdown("📌 កំណត់សំឡេង AI ឱ្យត្រូវទៅនឹងតួប្រុស តួស្រី និងអ្នកសម្រាយរឿង:")
         
         voice_keys = list(VOICE_PROFILES.keys())
         
@@ -236,11 +236,13 @@ with col_right:
             status_text = st.empty()
             
             try:
-                status_text.text("⏳ Preparing video & trimming...")
+                status_text.text("⏳ Buffering 2GB video file safely in chunks...")
                 progress_bar.progress(15)
                 
+                # Safe 2GB Chunked File Writing
                 raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
-                raw_tfile.write(uploaded_file.read())
+                for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
+                    raw_tfile.write(chunk)
                 raw_video_path = raw_tfile.name
                 raw_tfile.close()
                 
@@ -359,7 +361,8 @@ with col_right:
                     progress_bar.progress(10)
                     
                     raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
-                    raw_tfile.write(uploaded_file.read())
+                    for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
+                        raw_tfile.write(chunk)
                     raw_video_path = raw_tfile.name
                     raw_tfile.close()
                     
@@ -464,7 +467,6 @@ with col_right:
                             char_count = len(sub["khmer"])
                             est_duration = char_count / 10.5 
                             
-                            # Strict atempo calculation to prevent overlapping and match exact mouth timing
                             speed_factor = 1.0
                             if est_duration > target_duration and target_duration > 0:
                                 speed_factor = min(round(est_duration / target_duration, 2), 2.0)
@@ -521,6 +523,6 @@ with col_right:
                 except Exception as e:
                     st.error(f"❌ Render Exception: {e}")
     else:
-        st.info("👆 Upload a video and click **'AI Extract & Auto Translate'** to start.")
+        st.info("👆 Upload a video (up to 2GB) and click **'AI Extract & Auto Translate'** to start.")
     
     st.markdown('</div>', unsafe_allow_html=True)
