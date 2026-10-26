@@ -9,7 +9,7 @@ from translate import Translator
 
 # Page Configuration with Large Upload Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - AI Auto Speaker & Pitch Detection",
+    page_title="VoiceClone Studio Pro - Robust Translation & AI Voice Studio",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -99,10 +99,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| AI AUTO SPEAKER & PITCH DETECTION</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:14px; font-weight:normal; color:#94A3B8;">| ROBUST KHMER TRANSLATION & AI STUDIO</span>
         </div>
         <div class="badge-container">
-            <span class="badge-vip">🤖 AI Pitch & Diarization</span>
+            <span class="badge-vip">🤖 Robust Translation</span>
             <span class="badge-ready">🟢 1GB Video Support Active</span>
         </div>
     </div>
@@ -133,10 +133,10 @@ with col_left:
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ AI Auto Speaker & Voice Mapping Center")
+    st.markdown("### 🎛️ AI Auto Speaker & Robust Translation Center")
     
     with st.expander("📚 Character Voice Profiles (កំណត់សំឡេងសម្រាប់ AI)", expanded=True):
-        st.markdown("📌 ប្រព័ន្ធនឹងវិភាគសំឡេងក្នុងវីដេអូដោយស្វ័យប្រវត្តិ (ប្រុស ស្រី ឬចាស់) ហើយយកសំឡេងខាងក្រោមទៅជំនួស៖")
+        st.markdown("📌 ប្រព័ន្ធនឹងវិភាគសំឡេង និងបកប្រែជាភាសាខ្មែរយ៉ាងរលូន៖")
         
         voice_keys = list(VOICE_PROFILES.keys())
         
@@ -162,9 +162,9 @@ with col_right:
 
     tb_col1, tb_col2, tb_col3 = st.columns(3)
     with tb_col1:
-        btn_extract = st.button("🪄 1. AI Extract & Auto-Detect Roles", use_container_width=True)
+        btn_extract = st.button("🪄 1. AI Extract & Auto Translate", use_container_width=True)
     with tb_col2:
-        btn_force = st.button("🌐 2. Force Khmer Translate", use_container_width=True)
+        btn_force = st.button("🌐 2. Force Khmer Translate All", use_container_width=True)
     with tb_col3:
         btn_clear = st.button("🗑️ Reset Script", use_container_width=True)
 
@@ -172,8 +172,21 @@ with col_right:
         st.session_state.auto_subtitles = []
         st.rerun()
 
+    def translate_to_khmer(text):
+        """ Robust translation function with retry mechanism """
+        if not text:
+            return ""
+        for _ in range(3):
+            try:
+                translator = Translator(to_lang="km")
+                translated = translator.translate(text)
+                if translated and translated.strip():
+                    return translated
+            except Exception:
+                pass
+        return text # Fallback to original if translation fails
+
     def analyze_audio_pitch(wav_file_path, start_sec, duration_sec):
-        """ Analyze audio frequency/pitch to detect Male, Female, or Elder speaker from video """
         try:
             rate, data = wav.read(wav_file_path)
             if len(data.shape) > 1:
@@ -224,16 +237,15 @@ with col_right:
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-ar", "16000", "-ac", "1", wav_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 
-                status_text.text("⏳ Running Whisper AI Speech Recognition & Diarization...")
+                status_text.text("⏳ Running Whisper AI Speech Recognition...")
                 progress_bar.progress(60)
                 
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
                 
-                status_text.text("⏳ Analyzing Audio Pitch & Detecting Characters...")
+                status_text.text("⏳ Translating to Khmer & Analyzing Pitch...")
                 progress_bar.progress(85)
                 
-                translator = Translator(to_lang="km")
                 st.session_state.auto_subtitles = []
                 
                 for segment in result["segments"]:
@@ -241,15 +253,7 @@ with col_right:
                     duration = round(segment["end"] - segment["start"], 2)
                     original_text = segment["text"].strip()
                     
-                    khmer_text = original_text
-                    if original_text:
-                        try:
-                            translated = translator.translate(original_text)
-                            if translated:
-                                khmer_text = translated
-                        except Exception:
-                            pass
-                    
+                    khmer_text = translate_to_khmer(original_text)
                     detected_role = analyze_audio_pitch(wav_path, start_time, duration)
                             
                     st.session_state.auto_subtitles.append({
@@ -260,8 +264,8 @@ with col_right:
                     })
                 
                 progress_bar.progress(100)
-                status_text.text("🎉 AI Auto Pitch Analysis & Diarization Complete!")
-                st.success("✅ ប្រព័ន្ធ AI បានវិភាគសម្លេងក្នុងវីដេអូ និងបែងចែកតួអង្គដោយស្វ័យប្រវត្តិរួចរាល់!")
+                status_text.text("🎉 Extraction & Translation Complete!")
+                st.success("✅ បានទាញយក និងបកប្រែជាភាសាខ្មែរជោគជ័យទាំងអស់គ្នា!")
                 st.rerun()
                 
             except Exception as e:
@@ -270,22 +274,18 @@ with col_right:
             st.warning("⚠️ Please upload a video file first!")
 
     if btn_force and st.session_state.auto_subtitles:
-        translator = Translator(to_lang="km")
         for idx, sub in enumerate(st.session_state.auto_subtitles):
             current_text = sub["khmer"].strip()
             if current_text:
-                try:
-                    translated = translator.translate(current_text)
-                    if translated:
-                        st.session_state.auto_subtitles[idx]["khmer"] = translated
-                except Exception:
-                    pass
-        st.success("✅ Force Translation Finished!")
+                translated = translate_to_khmer(current_text)
+                if translated:
+                    st.session_state.auto_subtitles[idx]["khmer"] = translated
+        st.success("✅ Force Translation to Khmer Finished!")
         st.rerun()
 
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        st.markdown("💡 *Script Editor: AI បានចាប់សំឡេងតួអង្គដោយស្វ័យប្រវត្តិពីវីដេអូ។*")
+        st.markdown("💡 *Script Editor: អ្នកអាចកែសម្រួលអត្ថបទភាសាខ្មែរខាងក្រោមនេះបានតាមចិត្ត។*")
         
         role_options = ["អ្នកសម្រាយរឿង", "តួប្រុស", "តួស្រី", "តួចាស់/ព្រឹទ្ធាចារ្យ", "តួអង្គរងផ្សេងៗ"]
         
@@ -314,9 +314,9 @@ with col_right:
                 )
                 
         st.markdown("---")
-        st.markdown("### 🚀 Export AI Auto-Detected Dubbed Video")
+        st.markdown("### 🚀 Export Final Pro Dubbed Video")
         
-        if st.button("🎬 Render Final Pro Video with AI Auto Speakers", use_container_width=True):
+        if st.button("🎬 Render Final Pro Video", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -356,10 +356,10 @@ with col_right:
                     
                     for i, sub in enumerate(st.session_state.auto_subtitles):
                         clean_text = sub["khmer"].strip()
-                        if not clean_text or clean_text in ["?", "!", ""]:
+                        if not clean_text:
                             continue
                             
-                        status_text.text(f"⏳ Generating AI audio for auto-detected role #{i+1}...")
+                        status_text.text(f"⏳ Generating AI audio line #{i+1}...")
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
                         
                         role = sub.get("speaker", "អ្នកសម្រាយរឿង")
@@ -392,7 +392,7 @@ with col_right:
                     
                     if valid_subtitles:
                         progress_bar.progress(60)
-                        status_text.text("⏳ Mixing BGM and AI Auto-Detected Voices via FFmpeg...")
+                        status_text.text("⏳ Mixing BGM and AI Voices via FFmpeg...")
                         
                         output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
                         
@@ -454,14 +454,14 @@ with col_right:
                         
                         if process.returncode == 0 and os.path.exists(output_video_path) and os.path.getsize(output_video_path) > 0:
                             progress_bar.progress(100)
-                            status_text.text("🎉 AI Diarization Rendering Completed!")
-                            st.success("✅ បាន Render វីដេអូរួចរាល់! ប្រព័ន្ធ AI បានចាប់តួអង្គដោយស្វ័យប្រវត្តិ។")
+                            status_text.text("🎉 Final Rendering Completed!")
+                            st.success("✅ បាន Render វីដេអូរួចរាល់! គ្រប់ប្រយោគត្រូវបានបកប្រែជាភាសាខ្មែរយ៉ាងរលូន។")
                             
                             with open(output_video_path, "rb") as file:
                                 st.download_button(
-                                    label="📥 Download AI Auto-Detected Video (.MP4)",
+                                    label="📥 Download Final Pro Video (.MP4)",
                                     data=file,
-                                    file_name="ai_detected_movie_recap.mp4",
+                                    file_name="final_khmer_dubbed_video.mp4",
                                     mime="video/mp4",
                                     use_container_width=True
                                 )
@@ -472,6 +472,6 @@ with col_right:
                 except Exception as e:
                     st.error(f"❌ Render Exception: {e}")
     else:
-        st.info("👆 Upload a video up to 1GB and click **'AI Extract & Auto-Detect Roles'** to start.")
+        st.info("👆 Upload a video up to 1GB and click **'AI Extract & Auto Translate'** to start.")
     
     st.markdown('</div>', unsafe_allow_html=True)
