@@ -3,10 +3,11 @@ import streamlit.components.v1 as components
 import os
 import subprocess
 import tempfile
+import numpy as np
+import scipy.io.wavfile as wav
 import re
 import time
 import requests
-import json
 
 # ប្រើ faster-whisper សម្រាប់ការស្តាប់សំឡេង
 try:
@@ -30,12 +31,11 @@ header {visibility: hidden;}
 
 # ============ មុខងារ Backend ============
 def translate_to_khmer(text):
-    """បកប្រែអត្ថបទជាភាសាខ្មែរតាមរយៈ MyMemory API"""
     if not text or not text.strip(): return ""
     if re.search(r'[\u1780-\u17FF]', text): return text
     
     url = "https://api.mymemory.translated.net/get"
-    params = {"q": text, "langpair": "en|km"} # ប្តូរទៅ zh|km បើចង់បកពីចិន
+    params = {"q": text, "langpair": "en|km"}
     
     for _ in range(3):
         try:
@@ -51,7 +51,6 @@ def translate_to_khmer(text):
     return text
 
 def generate_voice(text, voice_type="male"):
-    """បង្កើតសំឡេង AI តាមរយៈ edge-tts"""
     voice_map = {
         "male": "km-KH-PisethNeural",
         "female": "km-KH-SreymomNeural",
@@ -97,116 +96,85 @@ html_code = """
     </style>
 </head>
 <body class="h-screen flex flex-col p-2">
+    <header class="h-14 glass-panel rounded-xl mb-2 px-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-cyan-500 to-emerald-400 p-[2px] flex items-center justify-center neon-glow-cyan">
+                <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                    <i class="fa-solid fa-film text-cyan-400 text-lg"></i>
+                </div>
+            </div>
+            <div>
+                <h1 class="font-tech text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-400">MOVIE TIME STUDIO PRO</h1>
+                <p class="text-[11px] text-slate-400">AI Auto Khmer Dubbing</p>
+            </div>
+        </div>
+    </header>
 
-    <!-- MAIN STUDIO WORKSPACE -->
-    <div class="flex-1 flex overflow-hidden gap-2">
-        
-        <!-- LEFT PANEL -->
-        <div class="w-full lg:w-[320px] flex flex-col gap-2 shrink-0">
-            <div class="glass-panel rounded-xl p-3 border border-slate-800 flex flex-col gap-2">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-300"><i class="fa-solid fa-tv text-cyan-400"></i> ផ្ទាំងមើលវីដេអូ (Video Preview)</span>
-                </div>
-                <div class="relative aspect-video bg-black rounded-lg overflow-hidden border border-slate-800 group shadow-inner">
-                    <video id="mainVideo" class="w-full h-full object-contain" controls>
-                        <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4" type="video/mp4">
-                    </video>
-                </div>
-                <div class="border-2 border-dashed border-slate-800 hover:border-cyan-500/50 rounded-lg p-3 text-center transition bg-slate-950/40 cursor-pointer">
-                    <input type="file" id="videoFileInput" accept="video/*,audio/*" class="hidden" onchange="handleFileSelect(event)">
-                    <div class="flex items-center justify-center space-x-2 text-cyan-400" onclick="document.getElementById('videoFileInput').click()">
-                        <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
-                        <span class="text-xs font-semibold">ទម្លាក់វីដេអូ ឬ Audio នៅទីនេះ</span>
-                    </div>
+    <div class="flex-1 flex gap-2 overflow-hidden">
+        <div class="w-[320px] glass-panel rounded-xl p-3 flex flex-col gap-2">
+            <video id="mainVideo" class="w-full aspect-video bg-black rounded-lg" controls>
+                <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4" type="video/mp4">
+            </video>
+            <div class="border-2 border-dashed border-slate-700 rounded-lg p-3 text-center cursor-pointer">
+                <input type="file" id="videoInput" accept="video/*" class="hidden" onchange="handleVideoUpload(event)">
+                <div onclick="document.getElementById('videoInput').click()">
+                    <i class="fa-solid fa-cloud-arrow-up text-cyan-400 text-lg"></i>
+                    <p class="text-xs text-slate-400 mt-1">ចុចទីនេះដើម្បី Upload វីដេអូ</p>
                 </div>
             </div>
         </div>
 
-        <!-- CENTER PANEL (SUBTITLES) -->
-        <div class="flex-1 flex flex-col glass-panel rounded-xl border border-slate-800 overflow-hidden">
-            <div class="p-2.5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
-                <button onclick="runAutoTranslate()" id="btnTranslate" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-semibold text-xs transition flex items-center space-x-1.5">
-                    <i class="fa-solid fa-language text-yellow-300"></i>
-                    <span>បកប្រែស្វ័យប្រវត្តិជាខ្មែរ</span>
+        <div class="flex-1 glass-panel rounded-xl flex flex-col overflow-hidden">
+            <div class="p-2 border-b border-slate-700 flex justify-between bg-slate-900/50">
+                <button onclick="window.parent.postMessage({type: 'TRANSLATE'}, '*')" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs">
+                    <i class="fa-solid fa-language"></i> បកប្រែជាខ្មែរ
                 </button>
             </div>
-            
-            <div class="grid grid-cols-12 gap-2 p-2 bg-slate-900/90 border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase">
-                <div class="col-span-1 text-center">#</div>
-                <div class="col-span-2 text-center">តួអង្គ</div>
-                <div class="col-span-4">អត្ថបទដើម</div>
-                <div class="col-span-4">អត្ថបទបកប្រែ</div>
-                <div class="col-span-1 text-center">សកម្មភាព</div>
-            </div>
-
-            <div id="subtitleListContainer" class="flex-1 overflow-y-auto p-2 space-y-2">
-                <!-- Dynamic Rows -->
+            <div id="subList" class="flex-1 overflow-y-auto p-2 space-y-2">
+                <!-- Rows injected here -->
             </div>
         </div>
     </div>
 
     <script>
-        let subtitles = [
-            { id: 1, speaker: "narrator", orig: "全要成了 救命啊元叔月救命！", khmer: "ជិតជោគជ័យហើយ ជួយផងលោកពូយួន និងអ្នកនាងយៀក!" },
-            { id: 2, speaker: "male", orig: "你們快上來 我拉你們上來 成大人！", khmer: "អ្នកទាំងអស់គ្នាប្រញាប់ឡើងមក ខ្ញុំជួយទាញឡើងមក លោកម្ចាស់ឆេង!" }
-        ];
+        let subs = [];
 
         function renderTable() {
-            const container = document.getElementById('subtitleListContainer');
+            const container = document.getElementById('subList');
             container.innerHTML = '';
-            subtitles.forEach((sub, index) => {
-                const row = document.createElement('div');
-                row.className = "grid grid-cols-12 gap-2 p-2 bg-slate-900/60 rounded-lg border border-slate-800 items-center text-xs";
+            subs.forEach((s, i) => {
+                let row = document.createElement('div');
+                row.className = "grid grid-cols-12 gap-2 p-2 bg-slate-900/60 rounded border border-slate-800 text-xs items-center";
                 row.innerHTML = `
-                    <div class="col-span-1 text-center font-mono text-cyan-400">#${sub.id}</div>
-                    <div class="col-span-2">
-                        <select class="w-full bg-slate-950 text-slate-200 rounded p-1 border border-slate-700">
-                            <option value="male" ${sub.speaker === 'male' ? 'selected' : ''}>👨 ប្រុស</option>
-                            <option value="female" ${sub.speaker === 'female' ? 'selected' : ''}>👩 ស្រី</option>
-                            <option value="narrator" ${sub.speaker === 'narrator' ? 'selected' : ''}>🎙️ សម្រាយ</option>
-                        </select>
-                    </div>
-                    <div class="col-span-4">
-                        <textarea rows="2" class="w-full bg-slate-950 text-amber-300 rounded p-1 text-xs">${sub.orig}</textarea>
-                    </div>
-                    <div class="col-span-4">
-                        <textarea rows="2" class="w-full bg-slate-950 text-emerald-400 rounded p-1 text-xs font-khmer font-semibold">${sub.khmer}</textarea>
-                    </div>
-                    <div class="col-span-1 flex justify-center space-x-1">
-                        <button onclick="previewVoice('${sub.khmer}', '${sub.speaker}')" class="w-7 h-7 bg-indigo-900 hover:bg-indigo-600 text-white rounded flex items-center justify-center">
-                            <i class="fa-solid fa-volume-high text-[10px]"></i>
-                        </button>
+                    <div class="col-span-2 text-cyan-400 text-center">#${s.id}</div>
+                    <div class="col-span-4 text-amber-300">${s.original}</div>
+                    <div class="col-span-4 text-emerald-400 font-bold">${s.khmer}</div>
+                    <div class="col-span-2 text-center">
+                        <button onclick="playAudio('${s.khmer}', '${s.speaker}')" class="px-2 py-1 bg-indigo-600 rounded text-white text-[10px]">🔊 ស្តាប់</button>
                     </div>
                 `;
                 container.appendChild(row);
             });
         }
 
-        function previewVoice(text, speaker) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                const voices = window.speechSynthesis.getVoices();
-                const khmerVoice = voices.find(v => v.lang.includes('km'));
-                if (khmerVoice) utterance.voice = khmerVoice;
-                if (speaker === 'female') utterance.pitch = 1.3;
-                else if (speaker === 'male') utterance.pitch = 0.9;
-                else utterance.pitch = 0.7;
-                window.speechSynthesis.speak(utterance);
-            }
+        function playAudio(text, speaker) {
+            window.parent.postMessage({type: 'PLAY_AUDIO', text: text, speaker: speaker}, '*');
         }
 
-        function runAutoTranslate() {
-            window.parent.postMessage({type: 'TRANSLATE_ALL'}, '*');
-        }
-
-        function handleFileSelect(e) {
-            const file = e.target.files[0];
+        function handleVideoUpload(event) {
+            const file = event.target.files[0];
             if (file) {
-                const url = URL.createObjectURL(file);
-                document.getElementById('mainVideo').src = url;
+                document.getElementById('mainVideo').src = URL.createObjectURL(file);
+                window.parent.postMessage({type: 'VIDEO_UPLOADED', name: file.name}, '*');
             }
         }
+
+        window.addEventListener("message", (event) => {
+            if (event.data.type === "UPDATE_SUBS") {
+                subs = event.data.data;
+                renderTable();
+            }
+        });
 
         window.onload = renderTable;
     </script>
@@ -214,15 +182,12 @@ html_code = """
 </html>
 """
 
-# បង្ហាញ UI នៅលើ Streamlit
-components.html(html_code, height=800, scrolling=True)
+# បង្ហាញ UI
+components.html(html_code, height=700, scrolling=False)
 
-# ============ បន្ថែមប៊ូតុង Python សម្រាប់ការបកប្រែពិត និងការបង្កើតសំឡេង ============
+# ============ BACKEND CONTROL PANEL ============
 st.markdown("---")
 st.markdown("### 🛠️ ផ្ទាំងគ្រប់គ្រងពិតប្រាកដ (Real Backend Control)")
-
-if 'subtitles' not in st.session_state:
-    st.session_state.subtitles = []
 
 col1, col2 = st.columns(2)
 with col1:
@@ -230,30 +195,41 @@ with col1:
     if uploaded_file:
         st.success(f"✅ បានទាញយក: {uploaded_file.name}")
         if st.button("🪄 ចាប់ផ្តើមបកប្រែវីដេអូនេះ", use_container_width=True):
-            st.info("កំពុងដំណើរការ... (សូមរង់ចាំ)")
-            st.session_state.subtitles = [
-                {"id": 1, "speaker": "narrator", "orig": "Hello, how are you?", "khmer": "សួស្តី អ្នកសុខសប្បាយទេ?"},
-                {"id": 2, "speaker": "male", "orig": "I am fine, thank you.", "khmer": "ខ្ញុំសុខសប្បាយ អរគុណ។"}
-            ]
-            st.rerun()
+            with st.spinner("កំពុងដំណើរការ Whisper និងបកប្រែ..."):
+                # Save uploaded file to temp
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tfile:
+                    tfile.write(uploaded_file.read())
+                    video_path = tfile.name
+                
+                # Process
+                subs = process_video(video_path)
+                st.session_state.subtitles = subs
+                st.success(f"✅ បកប្រែរួចរាល់! ចំនួនឃ្លា: {len(subs)}")
+                st.rerun()
 
 with col2:
     st.markdown("**ជម្រើសបន្ថែម:**")
     if st.button("🔄 បកប្រែអត្ថបទដែលមានស្រាប់ (Real Translate)", use_container_width=True):
-        for sub in st.session_state.subtitles:
-            if not re.search(r'[\u1780-\u17FF]', sub['khmer']):
-                sub['khmer'] = translate_to_khmer(sub['orig'])
-        st.success("✅ បកប្រែរួចរាល់!")
-        st.rerun()
+        if st.session_state.subtitles:
+            for sub in st.session_state.subtitles:
+                if not re.search(r'[\u1780-\u17FF]', sub['khmer']):
+                    sub['khmer'] = translate_to_khmer(sub['original'])
+            st.success("✅ បកប្រែរួចរាល់!")
+            st.rerun()
+        else:
+            st.warning("មិនមានអត្ថបទសម្រាប់បកប្រែទេ។")
 
     if st.button("🔊 បង្កើតសំឡេង AI ពិតប្រាកដ", use_container_width=True):
-        for sub in st.session_state.subtitles:
-            audio_file = generate_voice(sub['khmer'], sub['speaker'])
-            if audio_file:
-                st.audio(audio_file)
-        st.success("✅ បង្កើតសំឡេងរួចរាល់!")
+        if st.session_state.subtitles:
+            for sub in st.session_state.subtitles:
+                audio_file = generate_voice(sub['khmer'], sub['speaker'])
+                if audio_file:
+                    st.audio(audio_file)
+            st.success("✅ បង្កើតសំឡេងរួចរាល់!")
+        else:
+            st.warning("មិនមានអត្ថបទសម្រាប់បង្កើតសំឡេងទេ។")
 
-# បញ្ជូនទិន្នន័យទៅ HTML ដើម្បីបង្ហាញ
+# បញ្ជូនទិន្នន័យទៅ HTML
 if st.session_state.subtitles:
     components.html(
         f"<script>window.parent.postMessage({{type: 'UPDATE_SUBS', data: {st.session_state.subtitles}}}, '*');</script>",
