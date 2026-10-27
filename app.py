@@ -862,6 +862,12 @@ with st.sidebar:
         "ម៉ូដែល Whisper (Groq)", ["whisper-large-v3-turbo", "whisper-large-v3"],
         help="turbo លឿនជាង, large-v3 ច្បាស់ជាងបន្តិច",
     ) if groq_key else "whisper-large-v3-turbo"
+    api_key = api_key.strip()
+    groq_key = groq_key.strip()
+    if api_key.startswith("gsk_"):
+        st.error("⚠️ ប្រអប់ Gemini ដាក់ key របស់ Groq (gsk_...) ខុសប្រអប់។ Gemini key ចាប់ផ្តើមដោយ AIza...")
+    if groq_key.startswith("AIza"):
+        st.error("⚠️ ប្រអប់ Groq ដាក់ key របស់ Gemini (AIza...) ខុសប្រអប់។ Groq key ចាប់ផ្តើមដោយ gsk_...")
     model_options = list_models(api_key) if api_key else []
     if not model_options:
         model_options = FALLBACK_MODELS
