@@ -992,14 +992,14 @@ with right:
     b1, b2, b3, b4 = st.columns(4)
 
     if b1.button("🎤 ចាប់សំឡេង + បកប្រែខ្មែរ", type="primary", use_container_width=True,
-                 disabled=not (media and api_key and core.ffmpeg_available())):
+                 disabled=not (media and api_key and ffmpeg_available())):
         bar = st.progress(0.0, text="កំពុងចាប់ផ្តើម...")
         show = lambda p, t: bar.progress(min(max(p, 0.0), 1.0), text=t)
         try:
-            client = core.get_client(api_key)
+            client = get_client(api_key)
             if groq_key:
                 # ១) Whisper ចាប់សំឡេង  ២) Gemini បកប្រែអត្ថបទ (ស្រាល មិនសូវជួប 503)
-                df = core.groq_transcribe(
+                df = groq_transcribe(
                     groq_key, media, src_lang, WORK, model=whisper_model,
                     progress=lambda p, t: show(p * 0.5, t),
                 )
@@ -1009,7 +1009,7 @@ with right:
                     st.session_state.df = df  # រក្សាអត្ថបទដើមភ្លាមៗ ទោះបកប្រែបរាជ័យក៏មិនបាត់
                     st.session_state.editor_rev += 1
                     try:
-                        res = core.translate_lines(
+                        res = translate_lines(
                             client, model, df["original"].tolist(), src_lang,
                             progress=lambda p, t: show(0.5 + p * 0.5, t),
                             fallbacks=model_options[:4],
@@ -1024,7 +1024,7 @@ with right:
                             "ចុច «បកប្រែឡើងវិញ» ក្រោយបន្តិច ដោយមិនបាច់ចាប់សំឡេងម្តងទៀត។"
                         )
             else:
-                df = core.transcribe_translate(
+                df = transcribe_translate(
                     client, model, media, src_lang, WORK,
                     progress=show, fallbacks=model_options[:4], chunk_seconds=int(chunk_len),
                 )
