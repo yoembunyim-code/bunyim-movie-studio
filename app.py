@@ -669,6 +669,38 @@ def get_secret(name: str) -> str:
         return ""
 
 
+
+FALLBACK_MODELS = [
+    "gemini-flash-latest",
+    "gemini-3-flash-preview",
+    "gemini-3.1-pro-preview",
+    "gemini-2.5-flash",
+]
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def list_models(key: str) -> list[str]:
+    """ទាញបញ្ជីម៉ូដែល Gemini ដែល key នេះប្រើបាន (ម៉ូដែលចាស់ៗត្រូវបានបិទសម្រាប់អ្នកប្រើថ្មី)"""
+    try:
+        client = get_client(key)
+        names: list[str] = []
+        for m in client.models.list():
+            acts = getattr(m, "supported_actions", None) or []
+            if acts and "generateContent" not in acts:
+                continue
+            n = (getattr(m, "name", "") or "").replace("models/", "")
+            if not n.startswith("gemini"):
+                continue
+            if any(x in n for x in ("embedding", "image", "tts", "live", "audio",
+                                    "robotics", "computer-use", "learnlm", "aqa", "veo")):
+                continue
+            names.append(n)
+    except Exception:
+        return []
+    names = sorted(set(names), key=lambda n: (0 if ("flash" in n and "lite" not in n) else 1, n))
+    return ["gemini-flash-latest"] + [n for n in names if n != "gemini-flash-latest"]
+
+
 # ---------------------------------------------------------------------------
 # Sidebar: ការកំណត់
 # ---------------------------------------------------------------------------
@@ -680,10 +712,13 @@ with st.sidebar:
         value=os.environ.get("GEMINI_API_KEY", "") or get_secret("GEMINI_API_KEY"),
         help="យកមកដោយឥតគិតថ្លៃនៅ aistudio.google.com/apikey  (ឬដាក់ក្នុង Streamlit Secrets ឈ្មោះ GEMINI_API_KEY)",
     )
+    model_options = list_models(api_key) if api_key else []
+    if not model_options:
+        model_options = FALLBACK_MODELS
     model = st.selectbox(
         "ម៉ូដែល Gemini",
-        ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"],
-        help="ប្រសិនបើម៉ូដែលណាមួយមិនដំណើរការ សូមសាកម៉ូដែលផ្សេង ឬវាយឈ្មោះម៉ូដែលថ្មីខាងក្រោម",
+        model_options,
+        help="បញ្ជីនេះទាញពី key របស់អ្នកដោយស្វ័យប្រវត្តិ។ ប្រសិនបើមានកំហុស 404 សូមជ្រើសម៉ូដែលផ្សេង (ណែនាំ៖ gemini-flash-latest)",
     )
     custom_model = st.text_input("ឈ្មោះម៉ូដែលផ្ទាល់ខ្លួន (ជម្រើស)", value="")
     if custom_model.strip():
@@ -818,6 +853,8 @@ with right:
                 st.success(f"បានចាប់ {len(df)} ឃ្លា។ សូមពិនិត្យ និងកែក្នុងតារាងខាងក្រោម។")
         except Exception as e:
             st.error(f"មានបញ្ហា: {e}")
+            if "404" in str(e) or "NOT_FOUND" in str(e):
+                st.info("ម៉ូដែលនេះមិនអាចប្រើបានទេ។ សូមបើក sidebar ហើយជ្រើសម៉ូដែលផ្សេង (ឧ. gemini-flash-latest)។")
         finally:
             bar.empty()
 
