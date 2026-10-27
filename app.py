@@ -230,8 +230,8 @@ for dubbing a movie or drama: short, conversational, keeping the emotion and mea
 (never translate word-for-word, and use polite pronouns that fit the characters).
 
 Return ONLY a JSON array. Each item must have exactly these keys:
-  "start": start time in seconds (number, relative to the beginning of THIS audio),
-  "end": end time in seconds (number),
+  "start": start time in total SECONDS from the beginning of THIS audio (a plain number such as 83.5, never "MM:SS"),
+  "end": end time in total SECONDS (a plain number),
   "speaker": one of "male", "female", "narrator",
   "original": the transcript in the original language,
   "khmer": the Khmer translation.
@@ -272,18 +272,41 @@ def _wait_active(client, f, timeout: float = 180.0):
     raise RuntimeError("Gemini ដំណើរការឯកសារយូរពេក (timeout)")
 
 
-def _normalize_items(items, offset: float) -> list[dict]:
+def _to_seconds(v) -> float:
+    """ទទួលលេខ ឬ "MM:SS" / "HH:MM:SS" ហើយត្រឡប់វិនាទី"""
+    if isinstance(v, (int, float)):
+        return float(v)
+    t = str(v).strip().replace(",", ".")
+    if ":" in t:
+        parts = [float(x) for x in t.split(":")]
+        sec = 0.0
+        for x in parts:
+            sec = sec * 60 + x
+        return sec
+    return float(t)
+
+
+def _normalize_items(items, offset: float, limit: Optional[float] = None) -> tuple[list[dict], int]:
+    """ត្រឡប់ (ជួរ, ចំនួនឃ្លាដែលត្រូវទម្លាក់ព្រោះពេលវេលាលើសប្រវែងផ្នែក)"""
     rows = []
+    dropped = 0
     if isinstance(items, dict):
         items = items.get("lines") or items.get("segments") or []
     for it in items or []:
         if not isinstance(it, dict):
             continue
         try:
-            s = float(it.get("start", 0)) + offset
-            e = float(it.get("end", s + 2)) + offset
+            s = _to_seconds(it.get("start", 0))
+            e = _to_seconds(it.get("end", s + 2))
         except (TypeError, ValueError):
             continue
+        if limit is not None and s > limit + 1.0:
+            dropped += 1
+            continue
+        if limit is not None:
+            e = min(e, limit)
+        s += offset
+        e += offset
         spk = str(it.get("speaker", "narrator")).strip().lower()
         rows.append(
             {
@@ -294,7 +317,7 @@ def _normalize_items(items, offset: float) -> list[dict]:
                 "khmer": str(it.get("khmer", "") or "").strip(),
             }
         )
-    return rows
+    return rows, dropped
 
 
 def _is_transient(e: Exception) -> bool:
@@ -353,7 +376,7 @@ def transcribe_translate(
     media: Path,
     lang_name: str,
     workdir: Path,
-    chunk_seconds: int = 300,
+    chunk_seconds: int = 120,
     progress: Optional[Callable[[float, str], None]] = None,
     fallbacks: Optional[list[str]] = None,
 ) -> pd.DataFrame:
@@ -377,7 +400,13 @@ def transcribe_translate(
             items, _used = gen_json(
                 client, models, [uploaded, TRANSCRIBE_PROMPT.format(lang=lang_name)], note
             )
-            rows.extend(_normalize_items(items, off))
+            this_len = min(chunk_seconds, max(total - off, 1.0))
+            part_rows, dropped = _normalize_items(items, off, limit=this_len)
+            rows.extend(part_rows)
+            if dropped and progress:
+                progress(i / n, f"ផ្នែក {i + 1}: ទម្លាក់ {dropped} ឃ្លាដែលពេលវេលាខុស")
+            if i + 1 < n:
+                time.sleep(2)  # កុំហៅលឿនពេក ដើម្បីជៀស 429
         finally:
             try:
                 client.files.delete(name=uploaded.name)
@@ -385,6 +414,89 @@ def transcribe_translate(
                 pass
     if progress:
         progress(1.0, "ចាប់សំឡេង និងបកប្រែរួចរាល់")
+    return clean_df(pd.DataFrame(rows, columns=COLUMNS))
+
+
+LANG_CODES = {
+    "Chinese": "zh", "English": "en", "Korean": "ko", "Japanese": "ja", "Thai": "th",
+}
+
+
+def groq_transcribe(
+    api_key: str,
+    media: Path,
+    lang_name: str,
+    workdir: Path,
+    model: str = "whisper-large-v3-turbo",
+    chunk_seconds: int = 600,
+    progress: Optional[Callable[[float, str], None]] = None,
+) -> pd.DataFrame:
+    """ចាប់សំឡេងដោយ Whisper លើ Groq (ឥតគិតថ្លៃ លឿន) ត្រឡប់តារាងដែលមានតែអត្ថបទដើម"""
+    import requests
+
+    url = "https://api.groq.com/openai/v1/audio/transcriptions"
+    total = probe_duration(media)
+    if total <= 0:
+        raise RuntimeError("អានរយៈពេលឯកសារមិនបាន")
+    n = max(1, math.ceil(total / chunk_seconds))
+    rows: list[dict] = []
+    for i in range(n):
+        off = i * chunk_seconds
+        if progress:
+            progress(i / n, f"កំពុងចាប់សំឡេង (Whisper) ផ្នែក {i + 1}/{n}")
+        chunk = workdir / f"gchunk_{i}.mp3"
+        extract_audio_chunk(media, chunk, off, chunk_seconds)
+        data = {
+            "model": model,
+            "response_format": "verbose_json",
+            "timestamp_granularities[]": "segment",
+            "temperature": "0",
+        }
+        code = LANG_CODES.get(lang_name)
+        if code:
+            data["language"] = code
+        js = None
+        last = ""
+        for attempt in range(5):
+            with open(chunk, "rb") as fh:
+                r = requests.post(
+                    url,
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    files={"file": (chunk.name, fh, "audio/mpeg")},
+                    data=data,
+                    timeout=300,
+                )
+            if r.status_code == 200:
+                js = r.json()
+                break
+            last = f"{r.status_code} {r.text[:300]}"
+            if r.status_code in (401, 403):
+                raise RuntimeError("Groq API Key មិនត្រឹមត្រូវ: " + last)
+            if r.status_code == 429 or r.status_code >= 500:
+                try:
+                    wait = float(r.headers.get("retry-after", ""))
+                except ValueError:
+                    wait = min(8 * 2 ** attempt, 60)
+                wait = min(max(wait, 3.0), 90.0)
+                if progress:
+                    progress(i / n, f"Groq រវល់ កំពុងរង់ចាំ {int(wait)} វិនាទី...")
+                time.sleep(wait)
+                continue
+            raise RuntimeError("Groq មានកំហុស: " + last)
+        if js is None:
+            raise RuntimeError("Groq មិនឆ្លើយតប: " + last)
+        for seg in js.get("segments") or []:
+            text = str(seg.get("text", "")).strip()
+            if not text or float(seg.get("no_speech_prob", 0) or 0) > 0.9:
+                continue
+            st_ = float(seg.get("start", 0)) + off
+            en_ = float(seg.get("end", 0)) + off
+            rows.append({
+                "start": st_, "end": max(en_, st_ + 0.3), "speaker": DEFAULT_SPEAKER,
+                "original": text, "khmer": "",
+            })
+    if progress:
+        progress(1.0, "ចាប់សំឡេងរួចរាល់")
     return clean_df(pd.DataFrame(rows, columns=COLUMNS))
 
 
@@ -740,6 +852,16 @@ with st.sidebar:
         value=os.environ.get("GEMINI_API_KEY", "") or get_secret("GEMINI_API_KEY"),
         help="យកមកដោយឥតគិតថ្លៃនៅ aistudio.google.com/apikey  (ឬដាក់ក្នុង Streamlit Secrets ឈ្មោះ GEMINI_API_KEY)",
     )
+    groq_key = st.text_input(
+        "Groq API Key (ជម្រើស - ណែនាំ)",
+        type="password",
+        value=os.environ.get("GROQ_API_KEY", "") or get_secret("GROQ_API_KEY"),
+        help="ឥតគិតថ្លៃនៅ console.groq.com/keys ។ ប្រើ Whisper ចាប់សំឡេង (លឿន ស្ថិរភាព) ហើយ Gemini ធ្វើតែការបកប្រែ។",
+    )
+    whisper_model = st.selectbox(
+        "ម៉ូដែល Whisper (Groq)", ["whisper-large-v3-turbo", "whisper-large-v3"],
+        help="turbo លឿនជាង, large-v3 ច្បាស់ជាងបន្តិច",
+    ) if groq_key else "whisper-large-v3-turbo"
     model_options = list_models(api_key) if api_key else []
     if not model_options:
         model_options = FALLBACK_MODELS
@@ -752,6 +874,10 @@ with st.sidebar:
     if custom_model.strip():
         model = custom_model.strip()
 
+    chunk_len = st.slider(
+        "ប្រវែងផ្នែកនីមួយៗពេលប្រើ Gemini ចាប់សំឡេង (វិនាទី)", 60, 300, 120, 30,
+        help="តូចជាង = ពេលវេលាច្បាស់ជាង និងបកប្រែត្រូវជាង ប៉ុន្តែហៅ API ច្រើនដង",
+    )
     src_label = st.selectbox("ភាសាដើមក្នុងវីដេអូ", list(SOURCE_LANGS.keys()))
     src_lang = SOURCE_LANGS[src_label]
 
@@ -799,7 +925,8 @@ if not ffmpeg_available():
     problems.append("រកមិនឃើញ ffmpeg (ត្រូវដាក់ `ffmpeg` ក្នុងឯកសារ packages.txt)")
 pills = [
     f'<span class="pill {"" if api_key else "warn"}">Gemini key: <b>{"បានដាក់" if api_key else "មិនទាន់មាន"}</b></span>',
-    f'<span class="pill">ម៉ូដែល: <b>{model}</b></span>',
+    f'<span class="pill">ចាប់សំឡេង: <b>{"Groq Whisper" if groq_key else "Gemini"}</b></span>',
+    f'<span class="pill">បកប្រែ: <b>{model}</b></span>',
     f'<span class="pill">ffmpeg: <b>{"OK" if ffmpeg_available() else "មិនមាន"}</b></span>',
 ]
 st.markdown("".join(pills), unsafe_allow_html=True)
@@ -865,21 +992,48 @@ with right:
     b1, b2, b3, b4 = st.columns(4)
 
     if b1.button("🎤 ចាប់សំឡេង + បកប្រែខ្មែរ", type="primary", use_container_width=True,
-                 disabled=not (media and api_key and ffmpeg_available())):
+                 disabled=not (media and api_key and core.ffmpeg_available())):
         bar = st.progress(0.0, text="កំពុងចាប់ផ្តើម...")
+        show = lambda p, t: bar.progress(min(max(p, 0.0), 1.0), text=t)
         try:
-            client = get_client(api_key)
-            df = transcribe_translate(
-                client, model, media, src_lang, WORK,
-                progress=lambda p, t: bar.progress(min(p, 1.0), text=t),
-                fallbacks=model_options[:4],
-            )
-            if df.empty:
-                st.warning("រកមិនឃើញសំឡេងនិយាយក្នុងឯកសារនេះទេ។")
+            client = core.get_client(api_key)
+            if groq_key:
+                # ១) Whisper ចាប់សំឡេង  ២) Gemini បកប្រែអត្ថបទ (ស្រាល មិនសូវជួប 503)
+                df = core.groq_transcribe(
+                    groq_key, media, src_lang, WORK, model=whisper_model,
+                    progress=lambda p, t: show(p * 0.5, t),
+                )
+                if df.empty:
+                    st.warning("រកមិនឃើញសំឡេងនិយាយក្នុងឯកសារនេះទេ។")
+                else:
+                    st.session_state.df = df  # រក្សាអត្ថបទដើមភ្លាមៗ ទោះបកប្រែបរាជ័យក៏មិនបាត់
+                    st.session_state.editor_rev += 1
+                    try:
+                        res = core.translate_lines(
+                            client, model, df["original"].tolist(), src_lang,
+                            progress=lambda p, t: show(0.5 + p * 0.5, t),
+                            fallbacks=model_options[:4],
+                        )
+                        df["khmer"] = res
+                        st.session_state.df = df
+                        st.session_state.editor_rev += 1
+                        st.success(f"បានចាប់ និងបកប្រែ {len(df)} ឃ្លា។ សូមពិនិត្យក្នុងតារាង។")
+                    except Exception as e:
+                        st.warning(
+                            f"ចាប់សំឡេងបាន {len(df)} ឃ្លាហើយ តែបកប្រែមិនទាន់បាន ({e})។ "
+                            "ចុច «បកប្រែឡើងវិញ» ក្រោយបន្តិច ដោយមិនបាច់ចាប់សំឡេងម្តងទៀត។"
+                        )
             else:
-                st.session_state.df = df
-                st.session_state.editor_rev += 1
-                st.success(f"បានចាប់ {len(df)} ឃ្លា។ សូមពិនិត្យ និងកែក្នុងតារាងខាងក្រោម។")
+                df = core.transcribe_translate(
+                    client, model, media, src_lang, WORK,
+                    progress=show, fallbacks=model_options[:4], chunk_seconds=int(chunk_len),
+                )
+                if df.empty:
+                    st.warning("រកមិនឃើញសំឡេងនិយាយក្នុងឯកសារនេះទេ។")
+                else:
+                    st.session_state.df = df
+                    st.session_state.editor_rev += 1
+                    st.success(f"បានចាប់ {len(df)} ឃ្លា។ សូមពិនិត្យ និងកែក្នុងតារាងខាងក្រោម។")
         except Exception as e:
             st.error(f"មានបញ្ហា: {e}")
             if "404" in str(e) or "NOT_FOUND" in str(e):
@@ -969,6 +1123,14 @@ with right:
     cur = clean_df(edited)
     st.session_state.df = cur
     st.caption(f"សរុប **{len(cur)}** ឃ្លា")
+    _dur = st.session_state.duration
+    if _dur > 0 and len(cur):
+        _bad = int((cur["start"] > _dur + 1).sum())
+        if _bad:
+            st.warning(
+                f"មាន {_bad} ឃ្លាដែលពេលវេលាចាប់ផ្តើមលើសរយៈពេលវីដេអូ ({fmt_clock(_dur)}) "
+                "ដូច្នេះសំឡេងខ្មែរនឹងមិនលឺ។ សូមកែពេលវេលា ឬលុបជួរទាំងនោះ ឬប្រើ Groq Whisper (ពេលវេលាច្បាស់ជាង)។"
+            )
 
     d1, d2, d3 = st.columns(3)
     d1.download_button(
