@@ -1,6 +1,6 @@
-streamlit>=1.40
-google-genai>=1.0
-edge-tts>=6.1.12
-gTTS>=2.5
-pandas
+streamlit
+openai-whisper
+edge-tts
+translate
 numpy
+scipy
