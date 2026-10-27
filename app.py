@@ -1,332 +1,378 @@
-<!doctype html>
-<html lang="km">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VoiceClone Studio Pro – សម្រាយរឿងកម្រិតអាជីព (គ្មាន API Key)</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#05070C;--card:#0D121F;--ink:#E2E8F0;--mute:#94A3B8;--line:#1E293B;--acc:#0EA5E9;--acc2:#1E1B4B;--ok:#34D399;--bad:#F87171}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Noto Sans Khmer",system-ui,sans-serif}
-main{max-width:1280px;margin:0 auto;padding:18px 14px 60px}
-h1{font-size:24px;margin:0;background:linear-gradient(135deg,#38BDF8,#818CF8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-h2{font-size:16px;margin:0 0 10px;color:#38BDF8}
-.sub{color:var(--mute);margin:2px 0 16px;font-size:14px}
-.grid{display:grid;grid-template-columns:minmax(300px,400px) 1fr;gap:16px}
-@media(max-width:820px){.grid{grid-template-columns:1fr}}
-section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 4px 12px rgba(0,0,0,0.4)}
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
-button,select,input,textarea{font:inherit;color:inherit}
-button{background:linear-gradient(135deg,#0EA5E9,#2563EB);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;transition:all 0.3s}
-button:hover{opacity:0.9;transform:translateY(-1px)}
-button:disabled{opacity:.5;cursor:wait}
-button.g{background:var(--acc2);color:#C7D2FE;border:1px solid var(--line)}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-input,select,textarea{background:#111827;border:1px solid #374151;border-radius:8px;padding:6px 10px}
-video{width:100%;max-height:380px;background:#000;border-radius:8px}
-textarea{width:100%}
-#msg{min-height:24px;color:var(--mute);font-size:14px}#msg.err{color:var(--bad)}#msg.ok{color:var(--ok)}
-.wrap{overflow:auto;max-height:520px}
-table{border-collapse:collapse;width:100%;min-width:720px}
-th{position:sticky;top:0;background:var(--card);text-align:left;color:var(--mute);padding:8px;font-size:13px}
-td{padding:6px;vertical-align:top;border-bottom:1px solid var(--line)}
-td input[type=number]{width:72px}td textarea{min-height:56px;font-size:14px}
-tr.on td{background:var(--acc2)}
-.note{color:var(--mute);font-size:13px}
-input[type=range]{padding:0}
-.ai{border:1px dashed var(--acc);border-radius:10px;padding:10px;margin-top:10px;background:#0B101D}
-</style>
-</head>
-<body>
-<main>
-<h1>🎙️ VOICECLONE STUDIO PRO</h1>
-<p class="sub">ប្រព័ន្ធបកប្រែវីដេអូរឿង និងដាក់សំឡេង AI តាមតួអង្គ (ប្រុស · ស្រី · ចាស់ · សម្រាយ) យ៉ាងជាក់លាក់</p>
+import streamlit as st
+import os
+import subprocess
+import tempfile
+import whisper
+import numpy as np
+import scipy.io.wavfile as wav
+from translate import Translator
 
-<div class="grid">
-<section>
-  <h2>📺 គ្រប់គ្រងវីដេអូ និងសំឡេង</h2>
-  <div class="bar">
-    <button class="g" id="bVid">📁 បើកវីដេអូ</button>
-    <button class="g" id="bSrt">📄 នាំចូល SRT</button>
-  </div>
-  <input type="file" id="fVid" accept="video/*,audio/*" hidden>
-  <input type="file" id="fSrt" accept=".srt,.txt" hidden>
-  <video id="vid" controls playsinline></video>
-  <div class="bar">
-    <label><input type="checkbox" id="mute" checked> បិទសំឡេងដើមវីដេអូ</label>
-    <label>កម្រិត BGM <input type="range" id="vol" min="0" max="1" step="0.05" value="0.1" style="width:80px"></label>
-  </div>
+# Streamlit Page Setup
+st.set_page_config(
+    page_title="VoiceClone Studio Pro - Exact Sync Master",
+    page_icon="🎙️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-  <div class="ai">
-    <h2>🧠 AI ស្តាប់សំឡេង (Whisper Engine)</h2>
-    <div class="bar">
-      <label>ភាសាដើម <select id="src"></select></label>
-      <label>ម៉ូដែល <select id="model">
-        <option value="Xenova/whisper-tiny">tiny (លឿន)</option>
-        <option value="Xenova/whisper-base" selected>base (ស្តង់ដារ)</option>
-        <option value="Xenova/whisper-small">small (ច្បាស់ល្អ)</option>
-      </select></label>
+# Custom Styling
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #05070C !important;
+        color: #E2E8F0;
+        font-family: 'Khmer OS Battambang', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .header-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(90deg, #0B101D 0%, #151D30 100%);
+        padding: 12px 20px;
+        border-radius: 12px;
+        border: 1px solid #1E293B;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        margin-bottom: 15px;
+    }
+    .brand-title {
+        font-size: 20px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .card-panel {
+        background: #0D121F;
+        border: 1px solid #1E293B;
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        margin-bottom: 20px;
+    }
+    .stButton > button {
+        background: linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%) !important;
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+    }
+    .stTextInput > div > div > input, .stTextArea > div > div > textarea {
+        background-color: #111827 !important;
+        color: #F3F4F6 !important;
+        border: 1px solid #374151 !important;
+        border-radius: 8px !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Header
+st.markdown("""
+    <div class="header-bar">
+        <div class="brand-title">
+            🎙️ VOICECLONE STUDIO PRO | ULTRA HD & EXACT SYNC
+        </div>
+        <div>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Streamlit Active</span>
+        </div>
     </div>
-    <div class="bar">
-      <button id="bAsr">🧠 ស្តាប់ទាញយកអត្ថបទពីវីដេអូ</button>
-    </div>
-    <div class="bar">
-      <label>Gemini Key <input type="password" id="gkey" placeholder="AIza..." style="width:180px"></label>
-      <button id="bGem" class="g">✨ Gemini វិភាគតួអង្គ</button>
-    </div>
-    <p class="note">ដំណើរការក្នុងเครื่องរបស់អ្នកដោយសុវត្ថិភាព មិនបារម្ភរឿងបែកធ្លាយទិន្នន័យ។</p>
-  </div>
+""", unsafe_allow_html=True)
 
-  <h2 style="margin-top:12px">📝 បិទភ្ជាប់ស្គ្រីបបន្ថែម</h2>
-  <textarea id="script" rows="3" placeholder="មួយបន្ទាត់ = មួយឃ្លា"></textarea>
-  <div class="bar"><button class="g" id="bScript">បញ្ចូលទៅតារាង</button><button class="g" id="bAdd">＋ បន្ថែមឃ្លាថ្មី</button></div>
-</section>
-
-<section>
-  <h2>🎛️ តារាងគ្រប់គ្រងម៉ោង និងសំឡេងតួអង្គ (Pro Timeline)</h2>
-  <div class="bar">
-    <label>ភាសាគោលដៅ <select id="lang"></select></label>
-    <button id="bTr">🌐 បកប្រែខ្មែរទាំងអស់</button>
-    <button id="bPlay">▶ ចាក់វីដេអូ + សំឡេង AI</button>
-    <button class="g" id="bStop">■ ឈប់</button>
-    <button class="g" id="bGuess">🎭 ស្មានតួអង្គស្វ័យប្រវត្តិ</button>
-    <button class="g" id="bDl">⬇ ទាញយក SRT</button>
-  </div>
-  <div class="bar">
-    <label>សំឡេងប្រុស <select id="vM"></select></label>
-    <label>សំឡេងស្រី <select id="vF"></select></label>
-    <label><input type="checkbox" id="fit" checked> កម្រិតល្បឿនត្រូវមាត់ (Time-Stretch)</label>
-  </div>
-  <div id="msg"></div>
-  <div class="wrap"><table>
-    <thead><tr><th>Start</th><th>End</th><th>អត្ថបទដើម</th><th>អត្ថបទបកប្រែខ្មែរ</th><th>តួអង្គ</th><th>សកម្មភាព</th></tr></thead>
-    <tbody id="rows"></tbody>
-  </table></div>
-  <p class="note">💡 ពិនិត្យម៉ោង Start និង End ក្នុងតារាងឱ្យបានត្រឹមត្រូវ ដើម្បីធានាថាសំឡេងនិយាយត្រូវចំពេលតួអង្គមាត់កម្រើក។</p>
-</section>
-</div>
-</main>
-
-<script>
-const $=s=>document.querySelector(s), sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const LANGS=[['ខ្មែរ','km','km-KH'],['English','en','en-US'],['中文','zh-CN','zh-CN'],['ไทย','th','th-TH']];
-const SRC=[['ស្វ័យប្រវត្តិ','',''],['English','english','en-US'],['中文','chinese','zh-CN'],['ไทย','thai','th-TH'],['ខ្មែរ','khmer','km-KH']];
-const PROF={
-  'អ្នកសម្រាយរឿង':{g:'M',p:1,r:0.95},
-  'តួប្រុស':{g:'M',p:0.9,r:1},
-  'តួស្រី':{g:'F',p:1.1,r:1},
-  'តួចាស់':{g:'M',p:0.75,r:0.85},
-  'តួអង្គរង':{g:'F',p:1,r:1}
-};
-let rows=[], vid=$('#vid'), vidFile=null, lastAudio=null;
-$('#lang').innerHTML=LANGS.map((l,i)=>`<option value="${i}"${i===0?' selected':''}>${l[0]}</option>`).join('');
-$('#src').innerHTML=SRC.map((l,i)=>`<option value="${i}"${i===1?' selected':''}>${l[0]}</option>`).join('');
-const L=()=>LANGS[$('#lang').value];
-const S=()=>SRC[$('#src').value];
-const say=(t,c='')=>{const m=$('#msg');m.textContent=t;m.className=c};
-
-/* ---------- Voices Setup ---------- */
-let VO=[];
-function loadVoices(){
-  const code=L()[2].slice(0,2);
-  VO=speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith(code) || v.lang.toLowerCase().includes('km'));
-  if(!VO.length) VO=speechSynthesis.getVoices(); // Fallback
-  const opt=VO.map((v,i)=>`<option value="${i}">${v.name} (${v.lang})</option>`).join('')||'<option value="-1">(គ្មានសំឡេង)</option>';
-  $('#vM').innerHTML=opt; $('#vF').innerHTML=opt;
-  const find=re=>VO.findIndex(v=>re.test(v.name));
-  const m=find(/piseth|male|david|guy|mark|ryan/i), f=find(/sreymom|female|zira|aria|jenny/i);
-  if(m>=0)$('#vM').value=m; if(f>=0)$('#vF').value=f;
-}
-speechSynthesis.onvoiceschanged=loadVoices; loadVoices();
-$('#lang').onchange=loadVoices;
-const pick=g=>VO[+(g==='F'?$('#vF').value:$('#vM').value)] || VO[0];
-
-/* ---------- Parsing & SRT ---------- */
-const tc=s=>{const m=s.trim().match(/(?:(\d+):)?(\d+):(\d+)[,.](\d+)/);return m?(+(m[1]||0))*3600+(+m[2])*60+(+m[3])+(+m[4].padEnd(3,'0'))/1000:0};
-const fmt=t=>{const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=Math.floor(t%60),ms=Math.round((t%1)*1000);return [h,m,s].map(n=>String(n).padStart(2,'0')).join(':')+','+String(ms).padStart(3,'0')};
-function parseText(t){
-  t=t.replace(/\r/g,'').trim(); if(!t) return [];
-  if(t.includes('-->')) return t.split(/\n\s*\n/).map(b=>{const l=b.split('\n').filter(Boolean),i=l.findIndex(x=>x.includes('-->'));if(i<0)return null;const [a,e]=l[i].split('-->');return {s:tc(a),e:tc(e),o:l.slice(i+1).join(' ')}}).filter(Boolean);
-  return t.split('\n').filter(x=>x.trim()).map((x,i)=>({s:i*3,e:i*3+3,o:x.trim()}));
-}
-const setRows=list=>{rows=list.map(r=>({...r,t:'',v:'អ្នកសម្រាយរឿង'}));render()};
-
-/* ---------- Table Render ---------- */
-function render(){
-  const tb=$('#rows');tb.innerHTML='';
-  rows.forEach((r,i)=>{
-    const tr=document.createElement('tr');tr.id='r'+i;
-    tr.innerHTML=`<td><input type="number" step="0.1" min="0" value="${r.s.toFixed(1)}"></td>
-    <td><input type="number" step="0.1" min="0" value="${r.e.toFixed(1)}"></td>
-    <td><textarea>${r.o}</textarea></td>
-    <td><textarea>${r.t}</textarea></td>
-    <td><select>${Object.keys(PROF).map(v=>`<option${v===r.v?' selected':''}>${v}</option>`).join('')}</select></td>
-    <td><button class="g" title="ស្តាប់">▶</button></td>`;
-    const [s,e,o,t,v,b]=tr.querySelectorAll('input,textarea,select,button');
-    s.oninput=()=>r.s=+s.value; e.oninput=()=>r.e=+e.value; o.oninput=()=>r.o=o.value; t.oninput=()=>r.t=t.value; v.onchange=()=>r.v=v.value;
-    s.ondblclick=()=>{vid.currentTime=r.s};
-    b.onclick=()=>speak(r);
-    tb.appendChild(tr);
-  });
-}
-const sync=()=>rows.forEach((r,i)=>{const x=$('#r'+i);if(x){x.querySelectorAll('textarea')[1].value=r.t;x.querySelector('select').value=r.v}});
-
-/* ---------- Inputs & Video ---------- */
-$('#bVid').onclick=()=>$('#fVid').click();
-$('#fVid').onchange=e=>{vidFile=e.target.files[0];if(vidFile){vid.src=URL.createObjectURL(vidFile);say('បានបើកវីដេអូជោគជ័យ','ok')}};
-$('#bSrt').onclick=()=>$('#fSrt').click();
-$('#fSrt').onchange=async e=>{const f=e.target.files[0];if(f){setRows(parseText(await f.text()));say('នាំចូល SRT បាន '+rows.length+' ឃ្លា','ok')}};
-$('#bScript').onclick=()=>{setRows(parseText($('#script').value));say('បញ្ចូលបាន '+rows.length+' ឃ្លា','ok')};
-$('#bAdd').onclick=()=>{const t=vid.currentTime||0;rows.push({s:t,e:t+3,o:'',t:'',v:'អ្នកសម្រាយរឿង'});rows.sort((a,b)=>a.s-b.s);render()};
-
-/* ---------- Whisper AI (Speech to Text) ---------- */
-let asr=null, asrModel='';
-async function getAudio16k(){
-  const buf=await vidFile.arrayBuffer();
-  const AC=window.AudioContext||window.webkitAudioContext;
-  const ac=new AC({sampleRate:16000});
-  const ab=await ac.decodeAudioData(buf);
-  const n=ab.numberOfChannels, len=ab.length, out=new Float32Array(len);
-  for(let c=0;c<n;c++){const d=ab.getChannelData(c);for(let i=0;i<len;i++)out[i]+=d[i]/n}
-  ac.close&&ac.close(); return out;
-}
-$('#bAsr').onclick=async function(){
-  if(!vidFile) return say('សូមបើកវីដេអូជាមុនសិន','err');
-  this.disabled=true;
-  try{
-    const model=$('#model').value;
-    if(!asr||asrModel!==model){
-      say('កំពុងទាញយក AI Model… (សូមរង់ចាំបន្តិច)');
-      const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
-      env.allowLocalModels=false;
-      asr=await pipeline('automatic-speech-recognition',model);
-      asrModel=model;
-    }
-    say('កំពុងចម្រាញ់សំឡេងចេញពីវីដេអូ…');
-    lastAudio=await getAudio16k();
-    say('🧠 AI កំពុងស្តាប់ និងកំណត់ម៉ោង…');
-    const opt={chunk_length_s:30,stride_length_s:5,return_timestamps:true,task:'transcribe'};
-    if(S()[1]) opt.language=S()[1];
-    const out=await asr(lastAudio,opt);
-    const list=(out.chunks||[]).map(c=>{
-      const s=c.timestamp[0]||0, e=(c.timestamp[1]==null)?s+3:c.timestamp[1];
-      return {s,e:Math.max(e,s+.5),o:(c.text||'').trim()};
-    }).filter(x=>x.o);
-    if(!list.length) throw new Error('រកមិនឃើញសំឡេងនិយាយក្នុងវីដេអូ');
-    setRows(list);
-    say(`ស្តាប់បាន ${list.length} ឃ្លា — សូមចុចបកប្រែខ្មែរຕໍ່`,'ok');
-  }catch(x){say(x.message||'មានបញ្តហាក្នុងការស្តាប់','err');console.error(x)}
-  finally{this.disabled=false}
-};
-
-/* ---------- Translation (Google GTX Free) ---------- */
-async function tr(text,tl){
-  try{
-    const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&dt=t&tl='+tl+'&q='+encodeURIComponent(text));
-    if(!r.ok)throw 0; const j=await r.json(); return j[0].map(x=>x[0]).join('');
-  }catch(e){return text}
-}
-$('#bTr').onclick=async function(){
-  if(!rows.length) return say('មិនទាន់មានឃ្លាក្នុងតារាងទេ','err');
-  this.disabled=true;
-  try{
-    for(let i=0;i<rows.length;i++){
-      if(!rows[i].o.trim()) continue;
-      say(`កំពុងបកប្រែ ${i+1}/${rows.length}…`);
-      rows[i].t=await tr(rows[i].o,'km'); sync(); await sleep(100);
-    }
-    say('បកប្រែជាភាសាខ្មែរជោគជ័យ!','ok');
-  }catch(x){say('បកប្រែមិនបាន','err')}finally{this.disabled=false}
-};
-
-/* ---------- Auto Guess Character ---------- */
-$('#bGuess').onclick=()=>{
-  rows.forEach(r=>{
-    const txt=r.o.toLowerCase();
-    if(/mom|dad|child|girl|boy/i.test(txt)) r.v='តួអង្គរង';
-    else if(/old|grandfather|grandmother/i.test(txt)) r.v='តួចាស់';
-    else r.v='អ្នកសម្រាយរឿង';
-  });
-  sync(); say('ស្មានតួអង្គរួចរាល់!','ok');
-};
-
-/* ---------- Gemini AI Analysis ---------- */
-$('#bGem').onclick=async function(){
-  const key=$('#gkey').value.trim();
-  if(!key) return say('សូមបញ្ចូល Gemini API Key ជាមុនសិន','err');
-  if(!rows.length) return say('គ្មានទិន្នន័យក្នុងតារាង','err');
-  this.disabled=true;
-  try{
-    say('✨ Gemini កំពុងវិភាគសាច់រឿង និងបកប្រែ…');
-    const prompt=`You are a professional movie recap translator. Translate these subtitle lines into natural, expressive Khmer suitable for a movie recap narrator/characters. Return ONLY a JSON array of strings containing the translated lines in order:`;
-    const texts=rows.map(r=>r.o);
-    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt+JSON.stringify(texts)}]}]})
-    });
-    const j=await r.json();
-    const txt=j.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
-    const arr=JSON.parse(txt);
-    arr.forEach((t,i)=>{if(rows[i])rows[i].t=t});
-    sync(); say('Gemini បកប្រែជោគជ័យ!','ok');
-  }catch(e){say('Gemini មិនអាចដំណើរការបាន','err')}finally{this.disabled=false}
-};
-
-/* ---------- Speech Synthesis & Playback (Fixed Timing) ---------- */
-function speak(r){
-  const text=(r.t||r.o).trim(); if(!text) return;
-  speechSynthesis.cancel();
-  const P=PROF[r.v]||PROF['អ្នកសម្រាយរឿង'], v=pick(P.g);
-  let rate=P.r;
-  // Time-Stretch logic to fit exact mouth duration
-  const targetDuration=Math.max(0.8, r.e - r.s);
-  const estimatedDuration=text.length / 10; // ស្មា្ដនអត្រានិយាយភាសាខ្មែរ
-  if(estimatedDuration > targetDuration){
-    rate = Math.min(1.5, rate * (estimatedDuration / targetDuration));
-  }
-  
-  const u=new SpeechSynthesisUtterance(text);
-  if(v) u.voice=v; u.lang='km-KH'; u.rate=rate; u.pitch=P.p;
-  speechSynthesis.speak(u);
+VOICE_PROFILES = {
+    "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)": ("km-KH-PisethNeural", "+0Hz", "+0%"),
+    "តួប្រុស (សំឡេងប្រុសធ្ងន់ច្បាស់មានអំណាច)": ("km-KH-PisethNeural", "-2Hz", "+0%"),
+    "តួស្រី (សំឡេងស្រីស្រទន់ពីរោះធម្មជាតិ)": ("km-KH-SreymomNeural", "+2Hz", "+0%"),
+    "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំស្ងប់ស្ងាត់)": ("km-KH-PisethNeural", "-6Hz", "-5%"),
+    "តួអង្គរងផ្សេងៗ": ("km-KH-SreymomNeural", "+0Hz", "+0%")
 }
 
-let fired=new Set(), timer=null;
-function tick(){
-  const t=vid.currentTime;
-  rows.forEach((r,i)=>{
-    const on=t>=r.s && t<r.e;
-    const el=$('#r'+i);
-    if(el && el.classList.contains('on')!==on){
-      el.classList.toggle('on',on);
-      if(on) el.scrollIntoView({block:'nearest'});
-    }
-    if(!fired.has(i) && t>=r.s && t<r.s+0.4){
-      fired.add(i);
-      speak(r);
-    }
-  });
-}
+col_left, col_right = st.columns([1.1, 1.9])
 
-const applyVol=()=>{vid.muted=false;vid.volume=$('#mute').checked?0:+$('#vol').value};
-vid.addEventListener('play',()=>{applyVol();clearInterval(timer);timer=setInterval(tick,50)});
-vid.addEventListener('pause',()=>{clearInterval(timer);speechSynthesis.cancel()});
-vid.addEventListener('seeked',()=>{fired.clear();speechSynthesis.cancel()});
-$('#mute').onchange=applyVol;
-$('#vol').oninput=()=>{$('#mute').checked=false;applyVol()};
+with col_left:
+    st.markdown('<div class="card-panel">', unsafe_allow_html=True)
+    st.markdown("### 📺 Video Preview & Download Center")
+    uploaded_file = st.file_uploader("Upload Long Video File (Up to 2GB .MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
+    
+    if uploaded_file is not None:
+        if 'rendered_video_path' in st.session_state and os.path.exists(st.session_state.rendered_video_path):
+            st.markdown("🎉 **Rendered Video Result:**")
+            st.video(st.session_state.rendered_video_path)
+            
+            with open(st.session_state.rendered_video_path, "rb") as file:
+                st.download_button(
+                    label="📥 ចុចទីនេះដើម្បី Download វីដេអូកម្រិតច្បាស់ខ្ពស់ (.MP4)",
+                    data=file,
+                    file_name="exact_synced_movie.mp4",
+                    mime="video/mp4",
+                    use_container_width=True
+                )
+        else:
+            st.video(uploaded_file)
+            
+        file_size_mb = uploaded_file.size / (1024 * 1024)
+        st.success(f"📁 Loaded: {uploaded_file.name} ({file_size_mb:.2f} MB)")
+    else:
+        st.info("📌 Drop your video file here (Up to 2GB).")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-$('#bPlay').onclick=()=>{
-  if(!vid.src) return say('សូមបើកវីដេអូជាមុនសិន','err');
-  if(!rows.length) return say('គ្មានឃ្លាសម្រាប់ចាក់ទេ','err');
-  fired.clear(); vid.currentTime=Math.max(0, rows[0].s - 0.1); vid.play();
-  say('កំពុងចាក់វីដេអូ និងសំឡេង AI…','ok');
-};
-$('#bStop').onclick=()=>{vid.pause();speechSynthesis.cancel();say('បានបញ្ឈប់','ok')};
+with col_right:
+    st.markdown('<div class="card-panel">', unsafe_allow_html=True)
+    st.markdown("### 🎛️ Quick Action Control Center")
+    
+    act1, act2, act3, act4, act5 = st.columns(5)
+    with act1:
+        enable_blur = st.checkbox("✨ Blur", value=True, key="cb_blur")
+    with act2:
+        enable_text = st.checkbox("📝 Text", value=True, key="cb_text")
+    with act3:
+        enable_sub = st.checkbox("🟢 Sub", value=True, key="cb_sub")
+    with act4:
+        enable_med = st.checkbox("⚡ Med", value=True, key="cb_med")
+    with act5:
+        enable_sav = st.checkbox("💾 Save", value=True, key="cb_sav")
 
-$('#bDl').onclick=()=>{
-  const s=rows.map((r,i)=>`${i+1}\n${fmt(r.s)} --> ${fmt(r.e)}\n${r.t||r.o}\n`).join('\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:'text/plain'}));a.download='voiceclone-recaps.srt';a.click();
-};
-</script>
-</body>
-</html>
+    with st.expander("✂️ Video Trimmer & Timeline Cutter", expanded=False):
+        tc1, tc2 = st.columns(2)
+        with tc1:
+            trim_start = st.number_input("Start Seconds", min_value=0.0, value=0.0, step=1.0)
+        with tc2:
+            trim_duration = st.number_input("Duration Seconds (0 = All)", min_value=0.0, value=0.0, step=1.0)
+
+    with st.expander("📚 Character Voice Profiles", expanded=True):
+        voice_keys = list(VOICE_PROFILES.keys())
+        v1, v2 = st.columns(2)
+        with v1:
+            narrator_profile = st.selectbox("សំឡេងអ្នកសម្រាយរឿង", voice_keys, index=0)
+            male_profile = st.selectbox("សំឡេងតួប្រុស", voice_keys, index=1)
+        with v2:
+            female_profile = st.selectbox("សំឡេងតួស្រី", voice_keys, index=2)
+            elder_profile = st.selectbox("សំឡេងតួចាស់/ព្រឹទ្ធាចារ្យ", voice_keys, index=3)
+
+        other_profile = st.selectbox("សំឡេងតួអង្គរងផ្សេងៗ", voice_keys, index=4)
+
+    with st.expander("⚙️ Advanced Settings", expanded=False):
+        burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូ", value=enable_sub)
+        suppress_original = st.checkbox("🟢 បន្ថយសំឡេងដើមវីដេអូ", value=True)
+        bgm_volume = st.slider("🎵 កម្រិតភ្លេង BGM", min_value=0.1, max_value=1.5, value=0.4, step=0.1)
+        voice_volume = st.slider("🗣️ កម្រិតសំឡេង AI និយាយ", min_value=1.5, max_value=4.0, value=2.5, step=0.1)
+
+    if 'auto_subtitles' not in st.session_state:
+        st.session_state.auto_subtitles = []
+
+    tb_col1, tb_col2, tb_col3 = st.columns(3)
+    with tb_col1:
+        btn_extract = st.button("🪄 1. AI Extract & Auto Translate", use_container_width=True)
+    with tb_col2:
+        btn_force = st.button("🌐 2. Force Khmer Translate All", use_container_width=True)
+    with tb_col3:
+        btn_clear = st.button("🗑️ Reset Script", use_container_width=True)
+
+    if btn_clear:
+        st.session_state.auto_subtitles = []
+        if 'rendered_video_path' in st.session_state:
+            del st.session_state.rendered_video_path
+        st.rerun()
+
+    def translate_to_khmer(text):
+        if not text:
+            return ""
+        for _ in range(3):
+            try:
+                translator = Translator(to_lang="km")
+                translated = translator.translate(text)
+                if translated and translated.strip():
+                    return translated
+            except Exception:
+                pass
+        return text
+
+    def analyze_audio_pitch(wav_file_path, start_sec, duration_sec):
+        try:
+            rate, data = wav.read(wav_file_path)
+            if len(data.shape) > 1:
+                data = data[:, 0]
+            start_sample = int(start_sec * rate)
+            end_sample = int((start_sec + duration_sec) * rate)
+            segment = data[start_sample:end_sample]
+            if len(segment) == 0:
+                return "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)"
+            fft_spectrum = np.abs(np.fft.rfft(segment))
+            freqs = np.fft.rfftfreq(len(segment), d=1.0/rate)
+            peak_freq = freqs[np.argmax(fft_spectrum)]
+            if peak_freq > 190:
+                return "តួស្រី (សំឡេងស្រីស្រទន់ពីរោះធម្មជាតិ)"
+            elif 85 <= peak_freq <= 130:
+                return "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំស្ងប់ស្ងាត់)"
+            elif 130 < peak_freq <= 190:
+                return "តួប្រុស (សំឡេងប្រុសធ្ងន់ច្បាស់មានអំណាច)"
+            else:
+                return "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)"
+        except Exception:
+            return "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)"
+
+    if btn_extract:
+        if uploaded_file is not None:
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            try:
+                status_text.text("⏳ Buffering video file...")
+                progress_bar.progress(15)
+                raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+                for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
+                    raw_tfile.write(chunk)
+                raw_video_path = raw_tfile.name
+                raw_tfile.close()
+
+                trimmed_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+                trim_cmd = ["ffmpeg", "-y", "-ss", str(trim_start)]
+                if trim_duration > 0:
+                    trim_cmd.extend(["-t", str(trim_duration)])
+                trim_cmd.extend(["-i", raw_video_path, "-c", "copy", trimmed_video_path])
+                res = subprocess.run(trim_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                input_video_path = trimmed_video_path if res.returncode == 0 and os.path.getsize(trimmed_video_path) > 1000 else raw_video_path
+
+                audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                wav_path = tempfile.NamedTemporaryFile(delete=False, suffix='.wav').name
+                subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-ar", "16000", "-ac", "1", wav_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+                status_text.text("⏳ Whisper AI Transcribing...")
+                progress_bar.progress(60)
+                model = whisper.load_model("base")
+                result = model.transcribe(audio_path)
+
+                st.session_state.auto_subtitles = []
+                for segment in result["segments"]:
+                    start_time = round(segment["start"], 2)
+                    duration = round(segment["end"] - segment["start"], 2)
+                    khmer_text = translate_to_khmer(segment["text"].strip())
+                    detected_role = analyze_audio_pitch(wav_path, start_time, duration)
+                    st.session_state.auto_subtitles.append({
+                        "time_sec": start_time,
+                        "duration": duration,
+                        "speaker": detected_role,
+                        "khmer": khmer_text
+                    })
+                progress_bar.progress(100)
+                st.success("✅ បានទាញយក និងបកប្រែជោគជ័យ!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
+        else:
+            st.warning("⚠️ Please upload a video file first!")
+
+    if btn_force and st.session_state.auto_subtitles:
+        for idx, sub in enumerate(st.session_state.auto_subtitles):
+            current_text = sub["khmer"].strip()
+            if current_text:
+                translated = translate_to_khmer(current_text)
+                if translated:
+                    st.session_state.auto_subtitles[idx]["khmer"] = translated
+        st.success("✅ Force Translation Finished!")
+        st.rerun()
+
+    if st.session_state.auto_subtitles:
+        st.markdown("---")
+        with st.expander(f"📝 Pro Timeline Script Editor ({len(st.session_state.auto_subtitles)} lines)", expanded=False):
+            role_options = list(VOICE_PROFILES.keys())
+            for idx, sub in enumerate(st.session_state.auto_subtitles):
+                c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
+                with c1:
+                    st.session_state.auto_subtitles[idx]["time_sec"] = st.number_input(f"Start #{idx+1}", value=sub["time_sec"], step=0.1, key=f"s_{idx}")
+                with c2:
+                    st.session_state.auto_subtitles[idx]["duration"] = st.number_input(f"Dur #{idx+1}", value=sub["duration"], step=0.1, key=f"d_{idx}")
+                with c3:
+                    current_speaker = sub.get("speaker", role_options[0])
+                    if current_speaker not in role_options:
+                        current_speaker = role_options[0]
+                    st.session_state.auto_subtitles[idx]["speaker"] = st.selectbox(f"Role #{idx+1}", role_options, index=role_options.index(current_speaker), key=f"r_{idx}")
+                with c4:
+                    st.session_state.auto_subtitles[idx]["khmer"] = st.text_area(f"Khmer Script #{idx+1}", sub["khmer"], key=f"k_{idx}", height=60)
+
+        if st.button("🎬 Render & Preview Final Video (Exact Sync)", use_container_width=True):
+            if uploaded_file is not None:
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                try:
+                    status_text.text("⏳ Rendering Video...")
+                    progress_bar.progress(30)
+                    raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+                    for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
+                        raw_tfile.write(chunk)
+                    input_video_path = raw_tfile.name
+                    raw_tfile.close()
+
+                    srt_path = tempfile.NamedTemporaryFile(delete=False, suffix='.srt', mode='w', encoding='utf-8')
+                    for i, sub in enumerate(st.session_state.auto_subtitles):
+                        clean_text = sub["khmer"].strip()
+                        if not clean_text:
+                            continue
+                        start_sec = sub["time_sec"]
+                        end_sec = start_sec + sub["duration"]
+                        def format_time(sec):
+                            hours = int(sec // 3600)
+                            minutes = int((sec % 3600) // 60)
+                            seconds = int(sec % 60)
+                            ms = int((sec - int(sec)) * 1000)
+                            return f"{hours:02d}:{minutes:02d}:{seconds:02d},{ms:03d}"
+                        srt_path.write(f"{i+1}\n{format_time(start_sec)} --> {format_time(end_sec)}\n{clean_text}\n\n")
+                    srt_path.close()
+
+                    audio_inputs = []
+                    valid_subtitles = []
+                    for i, sub in enumerate(st.session_state.auto_subtitles):
+                        clean_text = sub["khmer"].strip()
+                        if not clean_text:
+                            continue
+                        line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                        role = sub.get("speaker", role_options[0])
+                        v_name = male_profile if "តួប្រុស" in role else (female_profile if "តួស្រី" in role else narrator_profile)
+                        voice, voice_pitch, voice_rate = VOICE_PROFILES.get(v_name, ("km-KH-PisethNeural", "+0Hz", "+0%"))
+                        edge_cmd = ["edge-tts", "--text", clean_text, "--voice", voice, "--rate", voice_rate, f"--pitch={voice_pitch}", "--write-media", line_audio_path]
+                        subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        if os.path.exists(line_audio_path) and os.path.getsize(line_audio_path) > 100:
+                            valid_subtitles.append(sub)
+                            audio_inputs.extend(["-i", line_audio_path])
+
+                    if valid_subtitles:
+                        output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+                        escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
+                        vf_str = f"subtitles='{escaped_srt_path}':force_style='FontName=Sans,FontSize=18,PrimaryColour=&H00FFFFFF,BorderStyle=1,Outline=1.5,Alignment=2'" if burn_subtitles else None
+
+                        filter_complex_parts = [f"[0:a]volume=0.03[orig]; [orig]pan=stereo|c0=c0|c1=c1,volume={bgm_volume}[bgm]"]
+                        mix_inputs = ["[bgm]"]
+
+                        for idx, sub in enumerate(valid_subtitles):
+                            delay_ms = int(sub["time_sec"] * 1000)
+                            target_duration = sub["duration"]
+                            char_count = len(sub["khmer"])
+                            est_duration = char_count / 10.0
+                            speed_factor = 1.0
+                            if est_duration > target_duration and target_duration > 0:
+                                speed_factor = min(round(est_duration / target_duration, 2), 2.2)
+                            stream_idx = idx + 1
+                            if speed_factor != 1.0:
+                                filter_complex_parts.append(f"[{stream_idx}:a]volume={voice_volume},atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
+                            else:
+                                filter_complex_parts.append(f"[{stream_idx}:a]volume={voice_volume},adelay={delay_ms}|{delay_ms}[a{idx}]")
+                            mix_inputs.append(f"[a{idx}]")
+
+                        mix_filter = "".join(mix_inputs) + f"amix=inputs={len(valid_subtitles)+1}:duration=first[aout]"
+                        filter_complex_parts.append(mix_filter)
+
+                        ffmpeg_cmd = ["ffmpeg", "-y", "-i", input_video_path] + audio_inputs + [
+                            "-filter_complex", ";".join(filter_complex_parts),
+                            "-map", "0:v", "-map", "[aout]"
+                        ]
+                        if vf_str:
+                            ffmpeg_cmd.extend(["-vf", vf_str])
+                        ffmpeg_cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-c:a", "aac", "-b:a", "192k", output_video_path])
+                        
+                        process = subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        if process.returncode == 0 and os.path.exists(output_video_path):
+                            progress_bar.progress(100)
+                            st.success("✅ Render រួចរាល់ដោយជោគជ័យ!")
+                            st.session_state.rendered_video_path = output_video_path
+                            st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Exception: {e}")
