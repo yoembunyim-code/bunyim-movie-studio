@@ -5,17 +5,19 @@ import tempfile
 import whisper
 import numpy as np
 import scipy.io.wavfile as wav
-from translate import Translator
+import urllib.request
+import urllib.parse
+import json
 
-# Streamlit Page Setup
+# Page Configuration with Ultra HD Pro Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Exact Sync Master",
+    page_title="VoiceClone Studio Pro - Reliable Khmer Translation",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling
+# Custom Dark Cyberpunk & Pro Styling
 st.markdown("""
     <style>
     .stApp {
@@ -40,6 +42,9 @@ st.markdown("""
         background: linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
     .card-panel {
         background: #0D121F;
@@ -56,6 +61,13 @@ st.markdown("""
         border: none !important;
         border-radius: 8px !important;
         padding: 8px 16px !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 0 10px rgba(14, 165, 233, 0.3) !important;
+    }
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #0284C7 0%, #1D4ED8) !important;
+        box-shadow: 0 0 18px rgba(14, 165, 233, 0.6) !important;
+        transform: translateY(-2px);
     }
     .stTextInput > div > div > input, .stTextArea > div > div > textarea {
         background-color: #111827 !important;
@@ -66,14 +78,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Header
+# Header Banner
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO | ULTRA HD & EXACT SYNC
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| RELIABLE KHMER TRANSLATION MASTER</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Streamlit Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Translation Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -100,9 +112,9 @@ with col_left:
             
             with open(st.session_state.rendered_video_path, "rb") as file:
                 st.download_button(
-                    label="📥 ចុចទីនេះដើម្បី Download វីដេអូកម្រិតច្បាស់ខ្ពស់ (.MP4)",
+                    label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
                     data=file,
-                    file_name="exact_synced_movie.mp4",
+                    file_name="translated_movie.mp4",
                     mime="video/mp4",
                     use_container_width=True
                 )
@@ -173,17 +185,20 @@ with col_right:
             del st.session_state.rendered_video_path
         st.rerun()
 
+    # Robust Google Translate Free Endpoint Function
     def translate_to_khmer(text):
         if not text:
             return ""
-        for _ in range(3):
-            try:
-                translator = Translator(to_lang="km")
-                translated = translator.translate(text)
-                if translated and translated.strip():
-                    return translated
-            except Exception:
-                pass
+        try:
+            url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=km&dt=t&q={urllib.parse.quote(text)}"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                translated_text = "".join([item[0] for item in res_data[0] if item[0]])
+                if translated_text.strip():
+                    return translated_text
+        except Exception:
+            pass
         return text
 
     def analyze_audio_pitch(wav_file_path, start_sec, duration_sec):
@@ -241,11 +256,14 @@ with col_right:
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
 
+                status_text.text("⏳ Translating to Khmer...")
+                progress_bar.progress(85)
                 st.session_state.auto_subtitles = []
                 for segment in result["segments"]:
                     start_time = round(segment["start"], 2)
                     duration = round(segment["end"] - segment["start"], 2)
-                    khmer_text = translate_to_khmer(segment["text"].strip())
+                    original_text = segment["text"].strip()
+                    khmer_text = translate_to_khmer(original_text)
                     detected_role = analyze_audio_pitch(wav_path, start_time, duration)
                     st.session_state.auto_subtitles.append({
                         "time_sec": start_time,
@@ -254,7 +272,7 @@ with col_right:
                         "khmer": khmer_text
                     })
                 progress_bar.progress(100)
-                st.success("✅ បានទាញយក និងបកប្រែជោគជ័យ!")
+                st.success("✅ បានទាញយក និងបកប្រែជាភាសាខ្មែរជោគជ័យ!")
                 st.rerun()
             except Exception as e:
                 st.error(f"❌ Error: {e}")
@@ -262,13 +280,14 @@ with col_right:
             st.warning("⚠️ Please upload a video file first!")
 
     if btn_force and st.session_state.auto_subtitles:
-        for idx, sub in enumerate(st.session_state.auto_subtitles):
-            current_text = sub["khmer"].strip()
-            if current_text:
-                translated = translate_to_khmer(current_text)
-                if translated:
-                    st.session_state.auto_subtitles[idx]["khmer"] = translated
-        st.success("✅ Force Translation Finished!")
+        with st.spinner("⏳ กำลังบังคับแปลภาษาเขมรทั้งหมด..."):
+            for idx, sub in enumerate(st.session_state.auto_subtitles):
+                current_text = sub["khmer"].strip()
+                if current_text:
+                    translated = translate_to_khmer(current_text)
+                    if translated:
+                        st.session_state.auto_subtitles[idx]["khmer"] = translated
+        st.success("✅ បង្ខំបកប្រែខ្មែរទាំងអស់ជោគជ័យ!")
         st.rerun()
 
     if st.session_state.auto_subtitles:
