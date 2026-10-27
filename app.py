@@ -1117,6 +1117,7 @@ with right:
         use_container_width=True,
         height=380,
         hide_index=True,
+        column_order=["start", "end", "speaker", "khmer", "original"],
         column_config={
             "start": st.column_config.NumberColumn("ចាប់ផ្តើម (វិ)", format="%.2f", min_value=0.0, step=0.1, width="small"),
             "end": st.column_config.NumberColumn("បញ្ចប់ (វិ)", format="%.2f", min_value=0.0, step=0.1, width="small"),
@@ -1128,7 +1129,13 @@ with right:
     )
     cur = clean_df(edited)
     st.session_state.df = cur
-    st.caption(f"សរុប **{len(cur)}** ឃ្លា")
+    _kh = int(cur["khmer"].str.contains("[\u1780-\u17ff]", regex=True).sum()) if len(cur) else 0
+    st.caption(f"សរុប **{len(cur)}** ឃ្លា · មានអត្ថបទខ្មែរ **{_kh}** ឃ្លា")
+    if len(cur) and _kh < len(cur) * 0.5:
+        st.warning(
+            "ភាគច្រើននៃឃ្លា **មិនទាន់មានអត្ថបទខ្មែរ**។ សូមចុចប៊ូតុង «🌐 បកប្រែឡើងវិញ (ពីអត្ថបទដើម)» ខាងលើ។ "
+            "ចំណាំ៖ ត្រូវជ្រើស «ភាសាដើមក្នុងវីដេអូ» ឲ្យត្រូវ (ឧ. អង់គ្លេស) នៅ sidebar។"
+        )
     _dur = st.session_state.duration
     if _dur > 0 and len(cur):
         _bad = int((cur["start"] > _dur + 1).sum())
