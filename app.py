@@ -297,16 +297,66 @@ def _normalize_items(items, offset: float) -> list[dict]:
     return rows
 
 
+def _is_transient(e: Exception) -> bool:
+    t = str(e)
+    return any(x in t for x in ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500",
+                                "INTERNAL", "504", "DEADLINE", "overloaded", "high demand"))
+
+
+def _is_missing(e: Exception) -> bool:
+    t = str(e)
+    return "404" in t or "NOT_FOUND" in t
+
+
+def gen_json(client, models: list[str], contents, note: Optional[Callable[[str], None]] = None):
+    """
+    ហៅ Gemini ហើយទទួល JSON។
+    - 503/429 (ម៉ាស៊ីនបម្រើរវល់): រង់ចាំរួចសាកម្តងទៀត (រហូតដល់ ៥ ដង) រួចប្តូរទៅម៉ូដែលបន្ទាប់
+    - 404 (ម៉ូដែលត្រូវបានបិទ): ប្តូរទៅម៉ូដែលបន្ទាប់ភ្លាមៗ
+    ត្រឡប់ (ទិន្នន័យ, ម៉ូដែលដែលបានប្រើ)
+    """
+    from google.genai import types
+
+    last: Exception | None = None
+    for m in models:
+        for attempt in range(5):
+            try:
+                resp = client.models.generate_content(
+                    model=m,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json", temperature=0.3
+                    ),
+                )
+                return parse_json_loose(resp.text), m
+            except Exception as e:
+                last = e
+                if _is_missing(e):
+                    break  # ម៉ូដែលនេះប្រើមិនបាន -> ម៉ូដែលបន្ទាប់
+                if _is_transient(e) or isinstance(e, ValueError):
+                    wait = min(4 * 2 ** attempt, 30)
+                    if note:
+                        note(f"Gemini រវល់ ({m}) កំពុងរង់ចាំ {wait} វិនាទី ហើយសាកម្តងទៀត...")
+                    time.sleep(wait)
+                    continue
+                raise
+    raise RuntimeError(f"Gemini មិនឆ្លើយត្រឹមត្រូវ (សាកគ្រប់ម៉ូដែលហើយ): {last}")
+
+
+def _model_chain(model: str, fallbacks: Optional[list[str]]) -> list[str]:
+    return [model] + [m for m in (fallbacks or []) if m != model]
+
+
 def transcribe_translate(
     client,
     model: str,
     media: Path,
     lang_name: str,
     workdir: Path,
-    chunk_seconds: int = 600,
+    chunk_seconds: int = 300,
     progress: Optional[Callable[[float, str], None]] = None,
+    fallbacks: Optional[list[str]] = None,
 ) -> pd.DataFrame:
-    from google.genai import types
 
     total = probe_duration(media)
     if total <= 0:
@@ -322,24 +372,11 @@ def transcribe_translate(
         uploaded = client.files.upload(file=str(chunk))
         try:
             uploaded = _wait_active(client, uploaded)
-            last_err: Exception | None = None
-            items = None
-            for attempt in range(3):
-                try:
-                    resp = client.models.generate_content(
-                        model=model,
-                        contents=[uploaded, TRANSCRIBE_PROMPT.format(lang=lang_name)],
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json", temperature=0.3
-                        ),
-                    )
-                    items = parse_json_loose(resp.text)
-                    break
-                except Exception as e:  # JSON មិនត្រឹមត្រូវ ឬ API កំហុសបណ្តោះអាសន្ន
-                    last_err = e
-                    time.sleep(2 * (attempt + 1))
-            if items is None:
-                raise RuntimeError(f"Gemini មិនឆ្លើយត្រឹមត្រូវ: {last_err}")
+            models = _model_chain(model, fallbacks)
+            note = (lambda t: progress(i / n, t)) if progress else None
+            items, _used = gen_json(
+                client, models, [uploaded, TRANSCRIBE_PROMPT.format(lang=lang_name)], note
+            )
             rows.extend(_normalize_items(items, off))
         finally:
             try:
@@ -358,8 +395,8 @@ def translate_lines(
     lang_name: str,
     batch: int = 40,
     progress: Optional[Callable[[float, str], None]] = None,
+    fallbacks: Optional[list[str]] = None,
 ) -> list[str]:
-    from google.genai import types
 
     out: list[str] = []
     for b in range(0, len(lines), batch):
@@ -371,23 +408,14 @@ def translate_lines(
         )
         result = None
         last_err: Exception | None = None
-        for attempt in range(3):
-            try:
-                resp = client.models.generate_content(
-                    model=model,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json", temperature=0.3
-                    ),
-                )
-                data = parse_json_loose(resp.text)
-                if isinstance(data, list) and len(data) == len(part):
-                    result = [str(x) for x in data]
-                    break
-                last_err = ValueError(f"ចំនួនឃ្លាមិនត្រូវគ្នា ({len(data)} ≠ {len(part)})")
-            except Exception as e:
-                last_err = e
-            time.sleep(2 * (attempt + 1))
+        models = _model_chain(model, fallbacks)
+        note = (lambda t: progress(b / max(1, len(lines)), t)) if progress else None
+        for _try in range(3):  # ចំនួនឃ្លាត្រូវតែត្រូវគ្នា
+            data, _used = gen_json(client, models, prompt, note)
+            if isinstance(data, list) and len(data) == len(part):
+                result = [str(x) for x in data]
+                break
+            last_err = ValueError(f"ចំនួនឃ្លាមិនត្រូវគ្នា ({len(data) if hasattr(data, '__len__') else '?'} ≠ {len(part)})")
         if result is None:
             raise RuntimeError(f"បកប្រែមិនបាន: {last_err}")
         out.extend(result)
@@ -844,6 +872,7 @@ with right:
             df = transcribe_translate(
                 client, model, media, src_lang, WORK,
                 progress=lambda p, t: bar.progress(min(p, 1.0), text=t),
+                fallbacks=model_options[:4],
             )
             if df.empty:
                 st.warning("រកមិនឃើញសំឡេងនិយាយក្នុងឯកសារនេះទេ។")
@@ -871,6 +900,7 @@ with right:
                 res = translate_lines(
                     client, model, d.loc[todo, "original"].tolist(), src_lang,
                     progress=lambda p, t: bar.progress(min(p, 1.0), text=t),
+                    fallbacks=model_options[:4],
                 )
                 d.loc[todo, "khmer"] = res
                 st.session_state.df = d
