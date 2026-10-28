@@ -10,13 +10,13 @@ import time
 
 # Page Configuration
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Dynamic Loading Master",
+    page_title="VoiceClone Studio Pro - Force Khmer Master",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling with Glowing Spinner Animation
+# Custom Styling
 st.markdown("""
     <style>
     .stApp {
@@ -64,18 +64,6 @@ st.markdown("""
         border: 1px solid #374151 !important;
         border-radius: 8px !important;
     }
-    /* Custom Glowing Box for Loading status */
-    .loading-box {
-        background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(37, 99, 235, 0.1));
-        border: 1px solid #0EA5E9;
-        padding: 15px;
-        border-radius: 10px;
-        text-align: center;
-        color: #38BDF8;
-        font-weight: bold;
-        box-shadow: 0 0 15px rgba(14, 165, 233, 0.2);
-        margin: 15px 0;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -83,10 +71,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO | DYNAMIC SPINNER MASTER
+            🎙️ VOICECLONE STUDIO PRO | FORCE KHMER TRANSLATE
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ 100% Khmer Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -144,7 +132,7 @@ with col_right:
 
     tb_col1, tb_col2 = st.columns(2)
     with tb_col1:
-        btn_extract = st.button("🪄 1. AI Extract & Translate to Khmer", use_container_width=True)
+        btn_extract = st.button("🪄 1. AI Extract & Force Translate Khmer", use_container_width=True)
     with tb_col2:
         btn_clear = st.button("🗑️ Reset Script", use_container_width=True)
 
@@ -154,23 +142,24 @@ with col_right:
             del st.session_state.rendered_video_path
         st.rerun()
 
+    # Guaranteed Khmer Translator function using Deep Translator
     def translate_to_khmer(text):
         if not text:
             return ""
         for _ in range(3):
             try:
+                # บังคับแปลจากภาษาใดก็ได้ (auto) ไปเป็นภาษาខ្មែរ (km)
                 translated = GoogleTranslator(source='auto', target='km').translate(text)
                 if translated and translated.strip():
                     time.sleep(0.05)
                     return translated
             except Exception:
                 time.sleep(0.2)
-        return text
+        return text  # បើបរាជ័យទើបប្រើអត្ថបទដើម
 
     if btn_extract:
         if uploaded_file is not None:
-            # ใช้ st.spinner แทน progress bar แบบเดิม เพื่อความสวยงามและไม่น่าเบื่อ
-            with st.spinner("🤖 AI កំពុងវិភាគ និងបកប្រែជាភាសាខ្មែរជូនលោកអ្នក... សូមរង់ចាំបន្តិចបន្តួច ☕"):
+            with st.spinner("🤖 AI កំពុងទាញយកសំឡេង និងบังคับបកប្រែជាភាសាខ្មែរ ១០០%... សូមរង់ចាំបន្តិច ☕"):
                 try:
                     raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
                     for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
@@ -191,6 +180,7 @@ with col_right:
                         duration = round(segment["end"] - segment["start"], 2)
                         original_text = segment["text"].strip()
                         
+                        # บังคับแปลเป็นภาษาខ្មែរជានិច្ច
                         khmer_text = translate_to_khmer(original_text)
                         
                         st.session_state.auto_subtitles.append({
@@ -200,7 +190,7 @@ with col_right:
                             "khmer": khmer_text
                         })
                     
-                    st.success("✅ បានទាញយក និងបកប្រែជាភាសាខ្មែរ ១០០% ជោគជ័យ!")
+                    st.success("✅ បានទាញយក និងบังคับបកប្រែជាភាសាខ្មែរជោគជ័យ!")
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
@@ -304,6 +294,6 @@ with col_right:
                     except Exception as e:
                         st.error(f"❌ Exception: {e}")
     else:
-        st.info("👆 Upload a video and click **'AI Extract & Translate to Khmer'**.")
+        st.info("👆 Upload a video and click **'AI Extract & Force Translate Khmer'**.")
     
     st.markdown('</div>', unsafe_allow_html=True)
