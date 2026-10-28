@@ -10,15 +10,15 @@ import urllib.parse
 import json
 import time
 
-# Page Configuration with Ultra HD Pro Support
+# Page Configuration
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Khmer Translation Fix",
+    page_title="VoiceClone Studio Pro - Simple & Fast Khmer",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Dark Cyberpunk & Pro Styling
+# Custom Styling
 st.markdown("""
     <style>
     .stApp {
@@ -43,9 +43,6 @@ st.markdown("""
         background: linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        display: flex;
-        align-items: center;
-        gap: 10px;
     }
     .card-panel {
         background: #0D121F;
@@ -62,13 +59,6 @@ st.markdown("""
         border: none !important;
         border-radius: 8px !important;
         padding: 8px 16px !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 0 10px rgba(14, 165, 233, 0.3) !important;
-    }
-    .stButton > button:hover {
-        background: linear-gradient(135deg, #0284C7 0%, #1D4ED8) !important;
-        box-shadow: 0 0 18px rgba(14, 165, 233, 0.6) !important;
-        transform: translateY(-2px);
     }
     .stTextInput > div > div > input, .stTextArea > div > div > textarea {
         background-color: #111827 !important;
@@ -79,32 +69,30 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Header Banner
+# Header
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| TRANSLATION FIX MASTER</span>
+            🎙️ VOICECLONE STUDIO PRO | 2-VOICE SYSTEM
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Translate Fix Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Fast & Clean Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
 
+# 2 Simple Main Voices
 VOICE_PROFILES = {
-    "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)": ("km-KH-PisethNeural", "+0Hz", "+0%"),
-    "តួប្រុស (សំឡេងប្រុសធ្ងន់ច្បាស់មានអំណាច)": ("km-KH-PisethNeural", "-2Hz", "+0%"),
-    "តួស្រី (សំឡេងស្រីស្រទន់ពីរោះធម្មជាតិ)": ("km-KH-SreymomNeural", "+2Hz", "+0%"),
-    "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំស្ងប់ស្ងាត់)": ("km-KH-PisethNeural", "-6Hz", "-5%"),
-    "តួអង្គរងផ្សេងៗ": ("km-KH-SreymomNeural", "+0Hz", "+0%")
+    "តួប្រុស (សំឡេងធ្ងន់ច្បាស់មានអំណាច)": ("km-KH-PisethNeural", "-1Hz", "+0%"),
+    "តួស្រី/អ្នកសម្រាយ (សំឡេងស្រទន់ពីរោះមានមនោសញ្ចេតនា)": ("km-KH-SreymomNeural", "+1Hz", "+0%")
 }
 
 col_left, col_right = st.columns([1.1, 1.9])
 
 with col_left:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 📺 Video Preview & Download Center")
-    uploaded_file = st.file_uploader("Upload Long Video File (Up to 2GB .MP4, .MKV, .MOV)", type=["mp4", "mkv", "mov"])
+    st.markdown("### 📺 Video Preview & Download")
+    uploaded_file = st.file_uploader("Upload Video File (Up to 2GB .MP4, .MKV)", type=["mp4", "mkv", "mov"])
     
     if uploaded_file is not None:
         if 'rendered_video_path' in st.session_state and os.path.exists(st.session_state.rendered_video_path):
@@ -113,9 +101,9 @@ with col_left:
             
             with open(st.session_state.rendered_video_path, "rb") as file:
                 st.download_button(
-                    label="📥 ចុចទីនេះដើម្បី Download វីដេអូរួចរាល់ (.MP4)",
+                    label="📥 Download វីដេអូរួចរាល់ (.MP4)",
                     data=file,
-                    file_name="translated_movie.mp4",
+                    file_name="khmer_movie_recap.mp4",
                     mime="video/mp4",
                     use_container_width=True
                 )
@@ -125,59 +113,30 @@ with col_left:
         file_size_mb = uploaded_file.size / (1024 * 1024)
         st.success(f"📁 Loaded: {uploaded_file.name} ({file_size_mb:.2f} MB)")
     else:
-        st.info("📌 Drop your video file here (Up to 2GB).")
+        st.info("📌 Drop your video file here.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Quick Action Control Center")
+    st.markdown("### 🎛️ Control Center (2 សម្លេងងាយស្រួល)")
     
-    act1, act2, act3, act4, act5 = st.columns(5)
-    with act1:
-        enable_blur = st.checkbox("✨ Blur", value=True, key="cb_blur")
-    with act2:
-        enable_text = st.checkbox("📝 Text", value=True, key="cb_text")
-    with act3:
-        enable_sub = st.checkbox("🟢 Sub", value=True, key="cb_sub")
-    with act4:
-        enable_med = st.checkbox("⚡ Med", value=True, key="cb_med")
-    with act5:
-        enable_sav = st.checkbox("💾 Save", value=True, key="cb_sav")
-
-    with st.expander("✂️ Video Trimmer & Timeline Cutter", expanded=False):
-        tc1, tc2 = st.columns(2)
-        with tc1:
-            trim_start = st.number_input("Start Seconds", min_value=0.0, value=0.0, step=1.0)
-        with tc2:
-            trim_duration = st.number_input("Duration Seconds (0 = All)", min_value=0.0, value=0.0, step=1.0)
-
-    with st.expander("📚 Character Voice Profiles", expanded=True):
+    with st.expander("🎙️ កំណត់សំឡេងหลัก (2 Choices)", expanded=True):
         voice_keys = list(VOICE_PROFILES.keys())
-        v1, v2 = st.columns(2)
-        with v1:
-            narrator_profile = st.selectbox("សំឡេងអ្នកសម្រាយរឿង", voice_keys, index=0)
-            male_profile = st.selectbox("សំឡេងតួប្រុស", voice_keys, index=1)
-        with v2:
-            female_profile = st.selectbox("សំឡេងតួស្រី", voice_keys, index=2)
-            elder_profile = st.selectbox("សំឡេងតួចាស់/ព្រឹទ្ធាចារ្យ", voice_keys, index=3)
-
-        other_profile = st.selectbox("សំឡេងតួអង្គរងផ្សេងៗ", voice_keys, index=4)
+        default_voice = st.selectbox("សំឡេងនិយាយលំនាំដើម (Default Voice)", voice_keys, index=1)
 
     with st.expander("⚙️ Advanced Settings", expanded=False):
-        burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូ", value=enable_sub)
+        burn_subtitles = st.checkbox("🟢 បញ្ចូលអក្សររត់ (Subtitles) លើវីដេអូ", value=True)
         suppress_original = st.checkbox("🟢 បន្ថយសំឡេងដើមវីដេអូ", value=True)
-        bgm_volume = st.slider("🎵 កម្រិតភ្លេង BGM", min_value=0.1, max_value=1.5, value=0.4, step=0.1)
+        bgm_volume = st.slider("🎵 កម្រិតភ្លេង BGM", min_value=0.1, max_value=1.5, value=0.3, step=0.1)
         voice_volume = st.slider("🗣️ កម្រិតសំឡេង AI និយាយ", min_value=1.5, max_value=4.0, value=2.5, step=0.1)
 
     if 'auto_subtitles' not in st.session_state:
         st.session_state.auto_subtitles = []
 
-    tb_col1, tb_col2, tb_col3 = st.columns(3)
+    tb_col1, tb_col2 = st.columns(2)
     with tb_col1:
-        btn_extract = st.button("🪄 1. AI Extract & Auto Translate", use_container_width=True)
+        btn_extract = st.button("🪄 1. AI Extract & Translate to Khmer", use_container_width=True)
     with tb_col2:
-        btn_force = st.button("🌐 2. Force Khmer Translate All", use_container_width=True)
-    with tb_col3:
         btn_clear = st.button("🗑️ Reset Script", use_container_width=True)
 
     if btn_clear:
@@ -186,7 +145,7 @@ with col_right:
             del st.session_state.rendered_video_path
         st.rerun()
 
-    # Robust Google Translate Endpoint with Delay to prevent Rate Limits
+    # Fast & Stable Khmer Translation
     def translate_to_khmer(text):
         if not text:
             return ""
@@ -198,35 +157,11 @@ with col_right:
                     res_data = json.loads(response.read().decode('utf-8'))
                     translated_text = "".join([item[0] for item in res_data[0] if item[0]])
                     if translated_text.strip():
-                        time.sleep(0.15) # หน่วงเวลาเล็กน้อยเพื่อป้องกัน Rate Limit
+                        time.sleep(0.1)
                         return translated_text
             except Exception:
-                time.sleep(0.5)
+                time.sleep(0.3)
         return text
-
-    def analyze_audio_pitch(wav_file_path, start_sec, duration_sec):
-        try:
-            rate, data = wav.read(wav_file_path)
-            if len(data.shape) > 1:
-                data = data[:, 0]
-            start_sample = int(start_sec * rate)
-            end_sample = int((start_sec + duration_sec) * rate)
-            segment = data[start_sample:end_sample]
-            if len(segment) == 0:
-                return "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)"
-            fft_spectrum = np.abs(np.fft.rfft(segment))
-            freqs = np.fft.rfftfreq(len(segment), d=1.0/rate)
-            peak_freq = freqs[np.argmax(fft_spectrum)]
-            if peak_freq > 190:
-                return "តួស្រី (សំឡេងស្រីស្រទន់ពីរោះធម្មជាតិ)"
-            elif 85 <= peak_freq <= 130:
-                return "តួចាស់/ព្រឹទ្ធាចារ្យ (សំឡេងបុរសចាស់ទុំស្ងប់ស្ងាត់)"
-            elif 130 < peak_freq <= 190:
-                return "តួប្រុស (សំឡេងប្រុសធ្ងន់ច្បាស់មានអំណាច)"
-            else:
-                return "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)"
-        except Exception:
-            return "អ្នកសម្រាយរឿង (រៀបរាប់អន្លង់អន្លោច ពីរោះធម្មជាតិ)"
 
     if btn_extract:
         if uploaded_file is not None:
@@ -238,41 +173,32 @@ with col_right:
                 raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
                 for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
                     raw_tfile.write(chunk)
-                raw_video_path = raw_tfile.name
+                input_video_path = raw_tfile.name
                 raw_tfile.close()
 
-                trimmed_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-                trim_cmd = ["ffmpeg", "-y", "-ss", str(trim_start)]
-                if trim_duration > 0:
-                    trim_cmd.extend(["-t", str(trim_duration)])
-                trim_cmd.extend(["-i", raw_video_path, "-c", "copy", trimmed_video_path])
-                res = subprocess.run(trim_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                input_video_path = trimmed_video_path if res.returncode == 0 and os.path.getsize(trimmed_video_path) > 1000 else raw_video_path
-
                 audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                wav_path = tempfile.NamedTemporaryFile(delete=False, suffix='.wav').name
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-ar", "16000", "-ac", "1", wav_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
                 status_text.text("⏳ Whisper AI Transcribing...")
                 progress_bar.progress(50)
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
 
-                status_text.text("⏳ Translating to Khmer safely...")
+                status_text.text("⏳ Translating to Khmer...")
                 progress_bar.progress(80)
                 st.session_state.auto_subtitles = []
                 total_seg = len(result["segments"])
+                
                 for idx, segment in enumerate(result["segments"]):
                     start_time = round(segment["start"], 2)
                     duration = round(segment["end"] - segment["start"], 2)
                     original_text = segment["text"].strip()
                     khmer_text = translate_to_khmer(original_text)
-                    detected_role = analyze_audio_pitch(wav_path, start_time, duration)
+                    
                     st.session_state.auto_subtitles.append({
                         "time_sec": start_time,
                         "duration": duration,
-                        "speaker": detected_role,
+                        "speaker": default_voice,
                         "khmer": khmer_text
                     })
                     status_text.text(f"⏳ Translating {idx+1}/{total_seg}...")
@@ -286,36 +212,20 @@ with col_right:
         else:
             st.warning("⚠️ Please upload a video file first!")
 
-    if btn_force and st.session_state.auto_subtitles:
-        with st.spinner("⏳ កំពុងบังคับបកប្រែខ្មែរទាំងអស់ដោយសុវត្ថិភាព..."):
-            for idx, sub in enumerate(st.session_state.auto_subtitles):
-                current_text = sub["khmer"].strip()
-                if current_text:
-                    translated = translate_to_khmer(current_text)
-                    if translated:
-                        st.session_state.auto_subtitles[idx]["khmer"] = translated
-        st.success("✅ បង្ខំបកប្រែខ្មែរទាំងអស់ជោគជ័យ!")
-        st.rerun()
-
     if st.session_state.auto_subtitles:
         st.markdown("---")
-        with st.expander(f"📝 Pro Timeline Script Editor ({len(st.session_state.auto_subtitles)} lines)", expanded=False):
+        with st.expander(f"📝 Script Editor ({len(st.session_state.auto_subtitles)} lines)", expanded=False):
             role_options = list(VOICE_PROFILES.keys())
             for idx, sub in enumerate(st.session_state.auto_subtitles):
-                c1, c2, c3, c4 = st.columns([0.8, 0.8, 1.2, 3])
+                c1, c2, c3 = st.columns([1, 1, 3])
                 with c1:
                     st.session_state.auto_subtitles[idx]["time_sec"] = st.number_input(f"Start #{idx+1}", value=sub["time_sec"], step=0.1, key=f"s_{idx}")
                 with c2:
-                    st.session_state.auto_subtitles[idx]["duration"] = st.number_input(f"Dur #{idx+1}", value=sub["duration"], step=0.1, key=f"d_{idx}")
+                    st.session_state.auto_subtitles[idx]["speaker"] = st.selectbox(f"Voice #{idx+1}", role_options, index=role_options.index(sub.get("speaker", default_voice)), key=f"r_{idx}")
                 with c3:
-                    current_speaker = sub.get("speaker", role_options[0])
-                    if current_speaker not in role_options:
-                        current_speaker = role_options[0]
-                    st.session_state.auto_subtitles[idx]["speaker"] = st.selectbox(f"Role #{idx+1}", role_options, index=role_options.index(current_speaker), key=f"r_{idx}")
-                with c4:
-                    st.session_state.auto_subtitles[idx]["khmer"] = st.text_area(f"Khmer Script #{idx+1}", sub["khmer"], key=f"k_{idx}", height=60)
+                    st.session_state.auto_subtitles[idx]["khmer"] = st.text_area(f"Khmer #{idx+1}", sub["khmer"], key=f"k_{idx}", height=50)
 
-        if st.button("🎬 Render & Preview Final Video (Exact Sync)", use_container_width=True):
+        if st.button("🎬 Render Final Video (Fast & Synced)", use_container_width=True):
             if uploaded_file is not None:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -351,9 +261,9 @@ with col_right:
                         if not clean_text:
                             continue
                         line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                        role = sub.get("speaker", role_options[0])
-                        v_name = male_profile if "តួប្រុស" in role else (female_profile if "តួស្រី" in role else narrator_profile)
-                        voice, voice_pitch, voice_rate = VOICE_PROFILES.get(v_name, ("km-KH-PisethNeural", "+0Hz", "+0%"))
+                        role = sub.get("speaker", default_voice)
+                        voice, voice_pitch, voice_rate = VOICE_PROFILES.get(role, ("km-KH-SreymomNeural", "+0Hz", "+0%"))
+                        
                         edge_cmd = ["edge-tts", "--text", clean_text, "--voice", voice, "--rate", voice_rate, f"--pitch={voice_pitch}", "--write-media", line_audio_path]
                         subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         if os.path.exists(line_audio_path) and os.path.getsize(line_audio_path) > 100:
@@ -402,3 +312,7 @@ with col_right:
                             st.rerun()
                 except Exception as e:
                     st.error(f"❌ Exception: {e}")
+    else:
+        st.info("👆 Upload a video and click **'AI Extract & Translate to Khmer'**.")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
