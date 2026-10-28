@@ -1,6 +1,6 @@
 streamlit
 openai-whisper
 edge-tts
-translate
+deep-translator
 numpy
 scipy
