@@ -8,10 +8,11 @@ import scipy.io.wavfile as wav
 import urllib.request
 import urllib.parse
 import json
+import time
 
 # Page Configuration with Ultra HD Pro Support
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Reliable Khmer Translation",
+    page_title="VoiceClone Studio Pro - Khmer Translation Fix",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -82,10 +83,10 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| RELIABLE KHMER TRANSLATION MASTER</span>
+            🎙️ VOICECLONE STUDIO PRO <span style="font-size:13px; font-weight:normal; color:#94A3B8;">| TRANSLATION FIX MASTER</span>
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Translation Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Translate Fix Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -185,20 +186,22 @@ with col_right:
             del st.session_state.rendered_video_path
         st.rerun()
 
-    # Robust Google Translate Free Endpoint Function
+    # Robust Google Translate Endpoint with Delay to prevent Rate Limits
     def translate_to_khmer(text):
         if not text:
             return ""
-        try:
-            url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=km&dt=t&q={urllib.parse.quote(text)}"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as response:
-                res_data = json.loads(response.read().decode('utf-8'))
-                translated_text = "".join([item[0] for item in res_data[0] if item[0]])
-                if translated_text.strip():
-                    return translated_text
-        except Exception:
-            pass
+        for _ in range(3):
+            try:
+                url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=km&dt=t&q={urllib.parse.quote(text)}"
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    res_data = json.loads(response.read().decode('utf-8'))
+                    translated_text = "".join([item[0] for item in res_data[0] if item[0]])
+                    if translated_text.strip():
+                        time.sleep(0.15) # หน่วงเวลาเล็กน้อยเพื่อป้องกัน Rate Limit
+                        return translated_text
+            except Exception:
+                time.sleep(0.5)
         return text
 
     def analyze_audio_pitch(wav_file_path, start_sec, duration_sec):
@@ -252,14 +255,15 @@ with col_right:
                 subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-ar", "16000", "-ac", "1", wav_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
                 status_text.text("⏳ Whisper AI Transcribing...")
-                progress_bar.progress(60)
+                progress_bar.progress(50)
                 model = whisper.load_model("base")
                 result = model.transcribe(audio_path)
 
-                status_text.text("⏳ Translating to Khmer...")
-                progress_bar.progress(85)
+                status_text.text("⏳ Translating to Khmer safely...")
+                progress_bar.progress(80)
                 st.session_state.auto_subtitles = []
-                for segment in result["segments"]:
+                total_seg = len(result["segments"])
+                for idx, segment in enumerate(result["segments"]):
                     start_time = round(segment["start"], 2)
                     duration = round(segment["end"] - segment["start"], 2)
                     original_text = segment["text"].strip()
@@ -271,7 +275,10 @@ with col_right:
                         "speaker": detected_role,
                         "khmer": khmer_text
                     })
+                    status_text.text(f"⏳ Translating {idx+1}/{total_seg}...")
+                
                 progress_bar.progress(100)
+                status_text.text("✅ Complete!")
                 st.success("✅ បានទាញយក និងបកប្រែជាភាសាខ្មែរជោគជ័យ!")
                 st.rerun()
             except Exception as e:
@@ -280,7 +287,7 @@ with col_right:
             st.warning("⚠️ Please upload a video file first!")
 
     if btn_force and st.session_state.auto_subtitles:
-        with st.spinner("⏳ กำลังบังคับแปลภาษาเขมรทั้งหมด..."):
+        with st.spinner("⏳ កំពុងบังคับបកប្រែខ្មែរទាំងអស់ដោយសុវត្ថិភាព..."):
             for idx, sub in enumerate(st.session_state.auto_subtitles):
                 current_text = sub["khmer"].strip()
                 if current_text:
