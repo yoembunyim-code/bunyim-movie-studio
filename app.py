@@ -5,20 +5,18 @@ import tempfile
 import whisper
 import numpy as np
 import scipy.io.wavfile as wav
-import urllib.request
-import urllib.parse
-import json
+from deep_translator import GoogleTranslator
 import time
 
 # Page Configuration
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Simple & Fast Khmer",
+    page_title="VoiceClone Studio Pro - Dynamic Loading Master",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling
+# Custom Styling with Glowing Spinner Animation
 st.markdown("""
     <style>
     .stApp {
@@ -66,6 +64,18 @@ st.markdown("""
         border: 1px solid #374151 !important;
         border-radius: 8px !important;
     }
+    /* Custom Glowing Box for Loading status */
+    .loading-box {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(37, 99, 235, 0.1));
+        border: 1px solid #0EA5E9;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        color: #38BDF8;
+        font-weight: bold;
+        box-shadow: 0 0 15px rgba(14, 165, 233, 0.2);
+        margin: 15px 0;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -73,15 +83,14 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO | 2-VOICE SYSTEM
+            🎙️ VOICECLONE STUDIO PRO | DYNAMIC SPINNER MASTER
         </div>
         <div>
-            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Fast & Clean Active</span>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ Active</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
 
-# 2 Simple Main Voices
 VOICE_PROFILES = {
     "តួប្រុស (សំឡេងធ្ងន់ច្បាស់មានអំណាច)": ("km-KH-PisethNeural", "-1Hz", "+0%"),
     "តួស្រី/អ្នកសម្រាយ (សំឡេងស្រទន់ពីរោះមានមនោសញ្ចេតនា)": ("km-KH-SreymomNeural", "+1Hz", "+0%")
@@ -118,7 +127,7 @@ with col_left:
 
 with col_right:
     st.markdown('<div class="card-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ Control Center (2 សម្លេងងាយស្រួល)")
+    st.markdown("### 🎛️ Control Center")
     
     with st.expander("🎙️ កំណត់សំឡេងหลัก (2 Choices)", expanded=True):
         voice_keys = list(VOICE_PROFILES.keys())
@@ -145,70 +154,56 @@ with col_right:
             del st.session_state.rendered_video_path
         st.rerun()
 
-    # Fast & Stable Khmer Translation
     def translate_to_khmer(text):
         if not text:
             return ""
         for _ in range(3):
             try:
-                url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=km&dt=t&q={urllib.parse.quote(text)}"
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=5) as response:
-                    res_data = json.loads(response.read().decode('utf-8'))
-                    translated_text = "".join([item[0] for item in res_data[0] if item[0]])
-                    if translated_text.strip():
-                        time.sleep(0.1)
-                        return translated_text
+                translated = GoogleTranslator(source='auto', target='km').translate(text)
+                if translated and translated.strip():
+                    time.sleep(0.05)
+                    return translated
             except Exception:
-                time.sleep(0.3)
+                time.sleep(0.2)
         return text
 
     if btn_extract:
         if uploaded_file is not None:
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            try:
-                status_text.text("⏳ Buffering video file...")
-                progress_bar.progress(15)
-                raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
-                for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
-                    raw_tfile.write(chunk)
-                input_video_path = raw_tfile.name
-                raw_tfile.close()
+            # ใช้ st.spinner แทน progress bar แบบเดิม เพื่อความสวยงามและไม่น่าเบื่อ
+            with st.spinner("🤖 AI កំពុងវិភាគ និងបកប្រែជាភាសាខ្មែរជូនលោកអ្នក... សូមរង់ចាំបន្តិចបន្តួច ☕"):
+                try:
+                    raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+                    for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
+                        raw_tfile.write(chunk)
+                    input_video_path = raw_tfile.name
+                    raw_tfile.close()
 
-                audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                    subprocess.run(["ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", audio_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-                status_text.text("⏳ Whisper AI Transcribing...")
-                progress_bar.progress(50)
-                model = whisper.load_model("base")
-                result = model.transcribe(audio_path)
+                    model = whisper.load_model("base")
+                    result = model.transcribe(audio_path)
 
-                status_text.text("⏳ Translating to Khmer...")
-                progress_bar.progress(80)
-                st.session_state.auto_subtitles = []
-                total_seg = len(result["segments"])
-                
-                for idx, segment in enumerate(result["segments"]):
-                    start_time = round(segment["start"], 2)
-                    duration = round(segment["end"] - segment["start"], 2)
-                    original_text = segment["text"].strip()
-                    khmer_text = translate_to_khmer(original_text)
+                    st.session_state.auto_subtitles = []
                     
-                    st.session_state.auto_subtitles.append({
-                        "time_sec": start_time,
-                        "duration": duration,
-                        "speaker": default_voice,
-                        "khmer": khmer_text
-                    })
-                    status_text.text(f"⏳ Translating {idx+1}/{total_seg}...")
-                
-                progress_bar.progress(100)
-                status_text.text("✅ Complete!")
-                st.success("✅ បានទាញយក និងបកប្រែជាភាសាខ្មែរជោគជ័យ!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error: {e}")
+                    for idx, segment in enumerate(result["segments"]):
+                        start_time = round(segment["start"], 2)
+                        duration = round(segment["end"] - segment["start"], 2)
+                        original_text = segment["text"].strip()
+                        
+                        khmer_text = translate_to_khmer(original_text)
+                        
+                        st.session_state.auto_subtitles.append({
+                            "time_sec": start_time,
+                            "duration": duration,
+                            "speaker": default_voice,
+                            "khmer": khmer_text
+                        })
+                    
+                    st.success("✅ បានទាញយក និងបកប្រែជាភាសាខ្មែរ ១០០% ជោគជ័យ!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
         else:
             st.warning("⚠️ Please upload a video file first!")
 
@@ -227,91 +222,87 @@ with col_right:
 
         if st.button("🎬 Render Final Video (Fast & Synced)", use_container_width=True):
             if uploaded_file is not None:
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                try:
-                    status_text.text("⏳ Rendering Video...")
-                    progress_bar.progress(30)
-                    raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
-                    for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
-                        raw_tfile.write(chunk)
-                    input_video_path = raw_tfile.name
-                    raw_tfile.close()
+                with st.spinner("🎬 កំពុង Render វីដេអូ និងបញ្ចូលសំឡេង AI ជាមួយ BGM... សូមរង់ចាំបន្តិច 🚀"):
+                    try:
+                        raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+                        for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
+                            raw_tfile.write(chunk)
+                        input_video_path = raw_tfile.name
+                        raw_tfile.close()
 
-                    srt_path = tempfile.NamedTemporaryFile(delete=False, suffix='.srt', mode='w', encoding='utf-8')
-                    for i, sub in enumerate(st.session_state.auto_subtitles):
-                        clean_text = sub["khmer"].strip()
-                        if not clean_text:
-                            continue
-                        start_sec = sub["time_sec"]
-                        end_sec = start_sec + sub["duration"]
-                        def format_time(sec):
-                            hours = int(sec // 3600)
-                            minutes = int((sec % 3600) // 60)
-                            seconds = int(sec % 60)
-                            ms = int((sec - int(sec)) * 1000)
-                            return f"{hours:02d}:{minutes:02d}:{seconds:02d},{ms:03d}"
-                        srt_path.write(f"{i+1}\n{format_time(start_sec)} --> {format_time(end_sec)}\n{clean_text}\n\n")
-                    srt_path.close()
+                        srt_path = tempfile.NamedTemporaryFile(delete=False, suffix='.srt', mode='w', encoding='utf-8')
+                        for i, sub in enumerate(st.session_state.auto_subtitles):
+                            clean_text = sub["khmer"].strip()
+                            if not clean_text:
+                                continue
+                            start_sec = sub["time_sec"]
+                            end_sec = start_sec + sub["duration"]
+                            def format_time(sec):
+                                hours = int(sec // 3600)
+                                minutes = int((sec % 3600) // 60)
+                                seconds = int(sec % 60)
+                                ms = int((sec - int(sec)) * 1000)
+                                return f"{hours:02d}:{minutes:02d}:{seconds:02d},{ms:03d}"
+                            srt_path.write(f"{i+1}\n{format_time(start_sec)} --> {format_time(end_sec)}\n{clean_text}\n\n")
+                        srt_path.close()
 
-                    audio_inputs = []
-                    valid_subtitles = []
-                    for i, sub in enumerate(st.session_state.auto_subtitles):
-                        clean_text = sub["khmer"].strip()
-                        if not clean_text:
-                            continue
-                        line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
-                        role = sub.get("speaker", default_voice)
-                        voice, voice_pitch, voice_rate = VOICE_PROFILES.get(role, ("km-KH-SreymomNeural", "+0Hz", "+0%"))
-                        
-                        edge_cmd = ["edge-tts", "--text", clean_text, "--voice", voice, "--rate", voice_rate, f"--pitch={voice_pitch}", "--write-media", line_audio_path]
-                        subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        if os.path.exists(line_audio_path) and os.path.getsize(line_audio_path) > 100:
-                            valid_subtitles.append(sub)
-                            audio_inputs.extend(["-i", line_audio_path])
+                        audio_inputs = []
+                        valid_subtitles = []
+                        for i, sub in enumerate(st.session_state.auto_subtitles):
+                            clean_text = sub["khmer"].strip()
+                            if not clean_text:
+                                continue
+                            line_audio_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                            role = sub.get("speaker", default_voice)
+                            voice, voice_pitch, voice_rate = VOICE_PROFILES.get(role, ("km-KH-SreymomNeural", "+0Hz", "+0%"))
+                            
+                            edge_cmd = ["edge-tts", "--text", clean_text, "--voice", voice, "--rate", voice_rate, f"--pitch={voice_pitch}", "--write-media", line_audio_path]
+                            subprocess.run(edge_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            if os.path.exists(line_audio_path) and os.path.getsize(line_audio_path) > 100:
+                                valid_subtitles.append(sub)
+                                audio_inputs.extend(["-i", line_audio_path])
 
-                    if valid_subtitles:
-                        output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-                        escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
-                        vf_str = f"subtitles='{escaped_srt_path}':force_style='FontName=Sans,FontSize=18,PrimaryColour=&H00FFFFFF,BorderStyle=1,Outline=1.5,Alignment=2'" if burn_subtitles else None
+                        if valid_subtitles:
+                            output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+                            escaped_srt_path = srt_path.name.replace('\\', '/').replace(':', '\\:')
+                            vf_str = f"subtitles='{escaped_srt_path}':force_style='FontName=Sans,FontSize=18,PrimaryColour=&H00FFFFFF,BorderStyle=1,Outline=1.5,Alignment=2'" if burn_subtitles else None
 
-                        filter_complex_parts = [f"[0:a]volume=0.03[orig]; [orig]pan=stereo|c0=c0|c1=c1,volume={bgm_volume}[bgm]"]
-                        mix_inputs = ["[bgm]"]
+                            filter_complex_parts = [f"[0:a]volume=0.03[orig]; [orig]pan=stereo|c0=c0|c1=c1,volume={bgm_volume}[bgm]"]
+                            mix_inputs = ["[bgm]"]
 
-                        for idx, sub in enumerate(valid_subtitles):
-                            delay_ms = int(sub["time_sec"] * 1000)
-                            target_duration = sub["duration"]
-                            char_count = len(sub["khmer"])
-                            est_duration = char_count / 10.0
-                            speed_factor = 1.0
-                            if est_duration > target_duration and target_duration > 0:
-                                speed_factor = min(round(est_duration / target_duration, 2), 2.2)
-                            stream_idx = idx + 1
-                            if speed_factor != 1.0:
-                                filter_complex_parts.append(f"[{stream_idx}:a]volume={voice_volume},atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
-                            else:
-                                filter_complex_parts.append(f"[{stream_idx}:a]volume={voice_volume},adelay={delay_ms}|{delay_ms}[a{idx}]")
-                            mix_inputs.append(f"[a{idx}]")
+                            for idx, sub in enumerate(valid_subtitles):
+                                delay_ms = int(sub["time_sec"] * 1000)
+                                target_duration = sub["duration"]
+                                char_count = len(sub["khmer"])
+                                est_duration = char_count / 10.0
+                                speed_factor = 1.0
+                                if est_duration > target_duration and target_duration > 0:
+                                    speed_factor = min(round(est_duration / target_duration, 2), 2.2)
+                                stream_idx = idx + 1
+                                if speed_factor != 1.0:
+                                    filter_complex_parts.append(f"[{stream_idx}:a]volume={voice_volume},atempo={speed_factor},adelay={delay_ms}|{delay_ms}[a{idx}]")
+                                else:
+                                    filter_complex_parts.append(f"[{stream_idx}:a]volume={voice_volume},adelay={delay_ms}|{delay_ms}[a{idx}]")
+                                mix_inputs.append(f"[a{idx}]")
 
-                        mix_filter = "".join(mix_inputs) + f"amix=inputs={len(valid_subtitles)+1}:duration=first[aout]"
-                        filter_complex_parts.append(mix_filter)
+                            mix_filter = "".join(mix_inputs) + f"amix=inputs={len(valid_subtitles)+1}:duration=first[aout]"
+                            filter_complex_parts.append(mix_filter)
 
-                        ffmpeg_cmd = ["ffmpeg", "-y", "-i", input_video_path] + audio_inputs + [
-                            "-filter_complex", ";".join(filter_complex_parts),
-                            "-map", "0:v", "-map", "[aout]"
-                        ]
-                        if vf_str:
-                            ffmpeg_cmd.extend(["-vf", vf_str])
-                        ffmpeg_cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-c:a", "aac", "-b:a", "192k", output_video_path])
-                        
-                        process = subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        if process.returncode == 0 and os.path.exists(output_video_path):
-                            progress_bar.progress(100)
-                            st.success("✅ Render រួចរាល់ដោយជោគជ័យ!")
-                            st.session_state.rendered_video_path = output_video_path
-                            st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Exception: {e}")
+                            ffmpeg_cmd = ["ffmpeg", "-y", "-i", input_video_path] + audio_inputs + [
+                                "-filter_complex", ";".join(filter_complex_parts),
+                                "-map", "0:v", "-map", "[aout]"
+                            ]
+                            if vf_str:
+                                ffmpeg_cmd.extend(["-vf", vf_str])
+                            ffmpeg_cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-c:a", "aac", "-b:a", "192k", output_video_path])
+                            
+                            process = subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            if process.returncode == 0 and os.path.exists(output_video_path):
+                                st.success("✅ Render រួចរាល់ដោយជោគជ័យ!")
+                                st.session_state.rendered_video_path = output_video_path
+                                st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Exception: {e}")
     else:
         st.info("👆 Upload a video and click **'AI Extract & Translate to Khmer'**.")
     
