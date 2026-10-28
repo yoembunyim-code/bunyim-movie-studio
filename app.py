@@ -5,12 +5,14 @@ import tempfile
 import whisper
 import numpy as np
 import scipy.io.wavfile as wav
-from deep_translator import GoogleTranslator
+import urllib.request
+import urllib.parse
+import json
 import time
 
 # Page Configuration
 st.set_page_config(
-    page_title="VoiceClone Studio Pro - Force Khmer Master",
+    page_title="VoiceClone Studio Pro - Direct URL Khmer Translator",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -71,7 +73,7 @@ st.markdown("""
 st.markdown("""
     <div class="header-bar">
         <div class="brand-title">
-            🎙️ VOICECLONE STUDIO PRO | FORCE KHMER TRANSLATE
+            🎙️ VOICECLONE STUDIO PRO | DIRECT URL TRANSLATOR
         </div>
         <div>
             <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #10B981; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">⚡ 100% Khmer Active</span>
@@ -132,7 +134,7 @@ with col_right:
 
     tb_col1, tb_col2 = st.columns(2)
     with tb_col1:
-        btn_extract = st.button("🪄 1. AI Extract & Force Translate Khmer", use_container_width=True)
+        btn_extract = st.button("🪄 1. AI Extract & Translate to Khmer", use_container_width=True)
     with tb_col2:
         btn_clear = st.button("🗑️ Reset Script", use_container_width=True)
 
@@ -142,24 +144,28 @@ with col_right:
             del st.session_state.rendered_video_path
         st.rerun()
 
-    # Guaranteed Khmer Translator function using Deep Translator
+    # Highly Stable Direct URL Google Translator
     def translate_to_khmer(text):
         if not text:
             return ""
         for _ in range(3):
             try:
-                # บังคับแปลจากภาษาใดก็ได้ (auto) ไปเป็นภาษาខ្មែរ (km)
-                translated = GoogleTranslator(source='auto', target='km').translate(text)
-                if translated and translated.strip():
-                    time.sleep(0.05)
-                    return translated
+                encoded_text = urllib.parse.quote(text)
+                url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=km&dt=t&q={encoded_text}"
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    res_data = json.loads(response.read().decode('utf-8'))
+                    translated_text = "".join([item[0] for item in res_data[0] if item[0]])
+                    if translated_text.strip():
+                        time.sleep(0.08)
+                        return translated_text
             except Exception:
-                time.sleep(0.2)
-        return text  # បើបរាជ័យទើបប្រើអត្ថបទដើម
+                time.sleep(0.3)
+        return text  # បើទោះជាបរាជ័យ ក៏ព្យាយាមបកប្រែម្ដងទៀត
 
     if btn_extract:
         if uploaded_file is not None:
-            with st.spinner("🤖 AI កំពុងទាញយកសំឡេង និងบังคับបកប្រែជាភាសាខ្មែរ ១០០%... សូមរង់ចាំបន្តិច ☕"):
+            with st.spinner("🤖 AI កំពុងទាញយកសំឡេង និងបកប្រែជាភាសាខ្មែរដោយផ្ទាល់... សូមរង់ចាំបន្តិច ☕"):
                 try:
                     raw_tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
                     for chunk in iter(lambda: uploaded_file.read(4 * 1024 * 1024), b""):
@@ -180,7 +186,7 @@ with col_right:
                         duration = round(segment["end"] - segment["start"], 2)
                         original_text = segment["text"].strip()
                         
-                        # บังคับแปลเป็นภาษาខ្មែរជានិច្ច
+                        # เรียกใช้งานฟังก์ชันแปลภาษาตรงๆ
                         khmer_text = translate_to_khmer(original_text)
                         
                         st.session_state.auto_subtitles.append({
@@ -190,7 +196,7 @@ with col_right:
                             "khmer": khmer_text
                         })
                     
-                    st.success("✅ បានទាញយក និងบังคับបកប្រែជាភាសាខ្មែរជោគជ័យ!")
+                    st.success("✅ បានទាញយក និងបកប្រែជាភាសាខ្មែរជោគជ័យ!")
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
@@ -208,6 +214,7 @@ with col_right:
                 with c2:
                     st.session_state.auto_subtitles[idx]["speaker"] = st.selectbox(f"Voice #{idx+1}", role_options, index=role_options.index(sub.get("speaker", default_voice)), key=f"r_{idx}")
                 with c3:
+                    # เพิ่มปุ่มแก้ไขข้อความภาษาខ្មែរได้ตามใจชอบตรงนี้
                     st.session_state.auto_subtitles[idx]["khmer"] = st.text_area(f"Khmer #{idx+1}", sub["khmer"], key=f"k_{idx}", height=50)
 
         if st.button("🎬 Render Final Video (Fast & Synced)", use_container_width=True):
@@ -294,6 +301,6 @@ with col_right:
                     except Exception as e:
                         st.error(f"❌ Exception: {e}")
     else:
-        st.info("👆 Upload a video and click **'AI Extract & Force Translate Khmer'**.")
+        st.info("👆 Upload a video and click **'AI Extract & Translate to Khmer'**.")
     
     st.markdown('</div>', unsafe_allow_html=True)
